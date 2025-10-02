@@ -1,16 +1,20 @@
-import { NextResponse } from "next/server"
+import { NextResponse, NextRequest } from "next/server"
 import TimesheetEntry from "@/models/TimesheetEntry"
 import Timesheet from "@/models/Timesheet"
 import { dbConnect } from "@/lib/db"
 import { startOfWeek, endOfWeek, formatISO } from "date-fns"
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     await dbConnect()
     const body = await req.json()
     const { project, typeOfWork, description, hours, assignedDate } = body
 
-    const entry = await TimesheetEntry.findById(params.id)
+    const { id } = await context.params // ✅ await params
+    const entry = await TimesheetEntry.findById(id)
     if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 })
     }
@@ -53,17 +57,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // ---------------- DELETE ----------------
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     await dbConnect()
 
-    const entry = await TimesheetEntry.findById(params.id)
+    const { id } = await context.params // ✅ await params
+
+    const entry = await TimesheetEntry.findById(id)
     if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 })
     }
 
     const timesheetId = entry.timesheetId
-    await TimesheetEntry.findByIdAndDelete(params.id)
+    await TimesheetEntry.findByIdAndDelete(id)
 
     // Recalculate parent timesheet
     await recalcTimesheet(timesheetId)
