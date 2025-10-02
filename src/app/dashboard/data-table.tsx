@@ -1,7 +1,6 @@
 // app/dashboard/data-table.tsx
-"use client"
+"use client";
 
-import * as React from "react"
 import {
   ColumnDef,
   flexRender,
@@ -10,7 +9,7 @@ import {
   useReactTable,
   ColumnFiltersState,
   getPaginationRowModel,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -19,16 +18,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { Check, ChevronDown } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronDown } from "lucide-react";
 
 import {
   Pagination,
@@ -37,7 +36,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
+} from "@/components/ui/pagination";
 
 import {
   Select,
@@ -45,22 +44,26 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+
+import { DateRange } from "react-day-picker";
+import { DateRangePicker } from "../components/DateRangePicker";
+import { useMemo, useState } from "react";
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const memoizedColumns = React.useMemo(() => columns, [columns])
-  const memoizedData = React.useMemo(() => data, [data])
+  const memoizedColumns = useMemo(() => columns, [columns]);
+  const memoizedData = useMemo(() => data, [data]);
 
   const table = useReactTable({
     data: memoizedData,
@@ -75,58 +78,73 @@ export function DataTable<TData, TValue>({
         pageSize: 10,
       },
     },
-  })
+  });
 
   // Current filter value for the "status" column
-  const statusColumn = table.getColumn("status")
-  const currentValue = (statusColumn?.getFilterValue() as string) ?? ""
+  const statusColumn = table.getColumn("status");
+  const currentStatus = (statusColumn?.getFilterValue() as string) ?? "";
+
+  const dateColumn = table.getColumn("date");
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        {/* ✅ Shadcn DropdownMenu for Status filter */}
-        {statusColumn && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                {currentValue ? currentValue : "Filter by Status"}
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                onClick={() => statusColumn.setFilterValue(undefined)}
-              >
-                {!currentValue && <Check className="mr-2 h-4 w-4" />}
-                All
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => statusColumn.setFilterValue("COMPLETED")}
-              >
-                {currentValue === "COMPLETED" && (
-                  <Check className="mr-2 h-4 w-4" />
-                )}
-                Completed
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => statusColumn.setFilterValue("INCOMPLETE")}
-              >
-                {currentValue === "INCOMPLETE" && (
-                  <Check className="mr-2 h-4 w-4" />
-                )}
-                Incomplete
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => statusColumn.setFilterValue("MISSING")}
-              >
-                {currentValue === "MISSING" && (
-                  <Check className="mr-2 h-4 w-4" />
-                )}
-                Missing
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          {/* ✅ Status filter */}
+          {statusColumn && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  {currentStatus ? currentStatus : "Filter by Status"}
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => statusColumn.setFilterValue(undefined)}
+                >
+                  {!currentStatus && <Check className="mr-2 h-4 w-4" />}
+                  All
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => statusColumn.setFilterValue("COMPLETED")}
+                >
+                  {currentStatus === "COMPLETED" && (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Completed
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => statusColumn.setFilterValue("INCOMPLETE")}
+                >
+                  {currentStatus === "INCOMPLETE" && (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Incomplete
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => statusColumn.setFilterValue("MISSING")}
+                >
+                  {currentStatus === "MISSING" && (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Missing
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* ✅ Date range filter */}
+          {dateColumn && (
+            <DateRangePicker
+              value={dateRange}
+              onChange={(range) => {
+                setDateRange(range);
+                dateColumn.setFilterValue(range);
+              }}
+            />
+          )}
+        </div>
 
         {/* ✅ Rows per page select */}
         <div className="flex items-center gap-2">
@@ -177,7 +195,10 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -204,7 +225,9 @@ export function DataTable<TData, TValue>({
               onClick={() => table.previousPage()}
               aria-disabled={!table.getCanPreviousPage()}
               className={
-                !table.getCanPreviousPage() ? "pointer-events-none opacity-50" : ""
+                !table.getCanPreviousPage()
+                  ? "pointer-events-none opacity-50"
+                  : ""
               }
             />
           </PaginationItem>
@@ -232,5 +255,5 @@ export function DataTable<TData, TValue>({
         </PaginationContent>
       </Pagination>
     </div>
-  )
+  );
 }

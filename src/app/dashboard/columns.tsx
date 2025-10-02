@@ -1,9 +1,18 @@
-// app/dashboard/columns.tsx
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+
+// ---- Extend ColumnMeta to allow filter configs ----
+declare module "@tanstack/react-table" {
+  interface ColumnMeta<TData, TValue> {
+    filter?: {
+      type: "faceted";
+      options: { label: string; value: string }[];
+    };
+  }
+}
 
 // Define the Timesheet type
 export type Timesheet = {
@@ -18,32 +27,48 @@ export const columns: ColumnDef<Timesheet>[] = [
     accessorKey: "week",
     header: "Week #",
   },
-  {
-    accessorKey: "date",
-    header: "Date",
-    cell: ({ row }) => {
-      const start = new Date(row.getValue("date"));
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6); // full week (Mon–Sun)
+{
+  accessorKey: "date",
+  header: "Date",
+  cell: ({ row }) => {
+    const start = new Date(row.getValue("date"));
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6); // full week (Mon–Sun)
 
-      const formatOptions: Intl.DateTimeFormatOptions = {
-        day: "numeric",
-        month: "short",
-      };
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "short",
+    };
 
-      return `${start.toLocaleDateString(
-        "en-GB",
-        formatOptions
-      )} - ${end.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-      })}`;
-    },
+    return `${start.toLocaleDateString(
+      "en-GB",
+      formatOptions
+    )} - ${end.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+    })}`;
   },
+  // ✅ filterFn for date range
+  filterFn: (row, columnId, filterValue) => {
+    if (!filterValue?.from || !filterValue?.to) return true
+    const date = new Date(row.getValue(columnId))
+    return date >= filterValue.from && date <= filterValue.to
+  },
+},
+
   {
     accessorKey: "status",
     header: "Status",
-     enableColumnFilter: true,
+    meta: {
+      filter: {
+        type: "faceted",
+        options: [
+          { label: "Completed", value: "COMPLETED" },
+          { label: "Incomplete", value: "INCOMPLETE" },
+          { label: "Missing", value: "MISSING" },
+        ],
+      },
+    },
     cell: ({ row }) => {
       const status = row.getValue("status") as Timesheet["status"];
 

@@ -8,9 +8,6 @@ import api from "@/lib/axios"
 import AddEntryModal from "../components/AddEntryModal"
 import { useState } from "react"
 import { startOfMonth, endOfMonth, startOfWeek, addWeeks, isBefore, formatISO } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 
 
 async function fetchTimesheets(): Promise<any[]> {
@@ -76,38 +73,6 @@ export default function DashboardPage() {
         <AddEntryModal />
       </div>
 
-      {/* Date Range Pickers */}
-      <div className="flex gap-4">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              From: {fromDate.toLocaleDateString()}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2">
-            <Calendar
-              mode="single"
-              selected={fromDate}
-              onSelect={(date) => date && setFromDate(date)}
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              To: {toDate.toLocaleDateString()}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2">
-            <Calendar
-              mode="single"
-              selected={toDate}
-              onSelect={(date) => date && setToDate(date)}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
 
       {isLoading ? (
         <p>Loading...</p>

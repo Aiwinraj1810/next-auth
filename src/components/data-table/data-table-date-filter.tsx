@@ -2,7 +2,7 @@
 
 import type { Column } from "@tanstack/react-table";
 import { CalendarIcon, XCircle } from "lucide-react";
-import * as React from "react";
+
 import type { DateRange } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { formatDate } from "@/lib/format";
+import { useCallback, useMemo } from "react";
 
 type DateSelection = Date[] | DateRange;
 
@@ -63,7 +64,7 @@ export function DataTableDateFilter<TData>({
 }: DataTableDateFilterProps<TData>) {
   const columnFilterValue = column.getFilterValue();
 
-  const selectedDates = React.useMemo<DateSelection>(() => {
+  const selectedDates = useMemo<DateSelection>(() => {
     if (!columnFilterValue) {
       return multiple ? { from: undefined, to: undefined } : [];
     }
@@ -81,7 +82,7 @@ export function DataTableDateFilter<TData>({
     return date ? [date] : [];
   }, [columnFilterValue, multiple]);
 
-  const onSelect = React.useCallback(
+  const onSelect = useCallback(
     (date: Date | DateRange | undefined) => {
       if (!date) {
         column.setFilterValue(undefined);
@@ -99,7 +100,7 @@ export function DataTableDateFilter<TData>({
     [column, multiple],
   );
 
-  const onReset = React.useCallback(
+  const onReset = useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
       column.setFilterValue(undefined);
@@ -107,7 +108,7 @@ export function DataTableDateFilter<TData>({
     [column],
   );
 
-  const hasValue = React.useMemo(() => {
+  const hasValue = useMemo(() => {
     if (multiple) {
       if (!getIsDateRange(selectedDates)) return false;
       return selectedDates.from || selectedDates.to;
@@ -116,7 +117,7 @@ export function DataTableDateFilter<TData>({
     return selectedDates.length > 0;
   }, [multiple, selectedDates]);
 
-  const formatDateRange = React.useCallback((range: DateRange) => {
+  const formatDateRange = useCallback((range: DateRange) => {
     if (!range.from && !range.to) return "";
     if (range.from && range.to) {
       return `${formatDate(range.from)} - ${formatDate(range.to)}`;
@@ -124,7 +125,7 @@ export function DataTableDateFilter<TData>({
     return formatDate(range.from ?? range.to);
   }, []);
 
-  const label = React.useMemo(() => {
+  const label = useMemo(() => {
     if (multiple) {
       if (!getIsDateRange(selectedDates)) return null;
 
