@@ -43,6 +43,7 @@ export const columns: ColumnDef<Timesheet>[] = [
   {
     accessorKey: "status",
     header: "Status",
+     enableColumnFilter: true,
     cell: ({ row }) => {
       const status = row.getValue("status") as Timesheet["status"];
 
