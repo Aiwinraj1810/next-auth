@@ -16,7 +16,7 @@ type FormValues = {
   typeOfWork: string
   description: string
   hours: number
-  weekStart: string
+  assignedDate: string
 }
 
 export default function AddEntryModal() {
@@ -84,17 +84,24 @@ export default function AddEntryModal() {
           {/* Hours */}
           <div>
             <label className="block text-sm font-medium mb-1">Hours *</label>
-            <Input type="number" min={1} max={12} {...register("hours", { valueAsNumber: true, required: true })} />
+            <Input
+              type="number"
+              min={1}
+              max={40}
+              {...register("hours", { valueAsNumber: true, required: true })}
+            />
           </div>
 
-          {/* Week Start */}
+          {/* Assigned Date */}
           <div>
-            <label className="block text-sm font-medium mb-1">Week Start *</label>
-            <Input type="date" {...register("weekStart", { required: true })} />
+            <label className="block text-sm font-medium mb-1">Assigned Date *</label>
+            <Input type="date" {...register("assignedDate", { required: true })} />
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "Saving..." : "Add Entry"}
             </Button>
