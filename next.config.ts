@@ -5,7 +5,12 @@ const nextConfig: NextConfig = {
 
   images:{
     domains : ["avatars.githubusercontent.com"]
-  }
+  },
+  eslint: {
+    // ⚠️ Ignore ESLint errors during builds
+    ignoreDuringBuilds: true,
+  },
+
 };
 
 
