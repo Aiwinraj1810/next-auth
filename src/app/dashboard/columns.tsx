@@ -22,93 +22,104 @@ export type Timesheet = {
   status: "COMPLETED" | "INCOMPLETE" | "MISSING";
 };
 
-export const columns: ColumnDef<Timesheet>[] = [
-  {
-    accessorKey: "week",
-    header: "Week #",
-  },
-{
-  accessorKey: "date",
-  header: "Date",
-  cell: ({ row }) => {
-    const start = new Date(row.getValue("date"));
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6); // full week
+// ⚡ Turn columns into a function
+export function getColumns(  handleOpenCreate: (weekStart: string) => void): ColumnDef<Timesheet>[] {
+  return [
+    {
+      accessorKey: "week",
+      header: "Week #",
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => {
+        const start = new Date(row.getValue("date"));
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6); // full week
 
-    return `${start.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    })} - ${end.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-    })}`;
-  },
-  filterFn: (row, columnId, filterValue) => {
-    if (!filterValue?.from || !filterValue?.to) return true;
+        return `${start.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        })} - ${end.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+        })}`;
+      },
+      filterFn: (row, columnId, filterValue) => {
+        if (!filterValue?.from || !filterValue?.to) return true;
 
-    const start = new Date(row.getValue(columnId));
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
+        const start = new Date(row.getValue(columnId));
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
 
-    const from = new Date(filterValue.from);
-    const to = new Date(filterValue.to);
+        const from = new Date(filterValue.from);
+        const to = new Date(filterValue.to);
 
-    // ✅ Check week overlap
-    return end >= from && start <= to;
-  },
-},
-
-
-
-  {
-    accessorKey: "status",
-    header: "Status",
-    meta: {
-      filter: {
-        type: "faceted",
-        options: [
-          { label: "Completed", value: "COMPLETED" },
-          { label: "Incomplete", value: "INCOMPLETE" },
-          { label: "Missing", value: "MISSING" },
-        ],
+        // ✅ Check week overlap
+        return end >= from && start <= to;
       },
     },
-    cell: ({ row }) => {
-      const status = row.getValue("status") as Timesheet["status"];
+    {
+      accessorKey: "status",
+      header: "Status",
+      meta: {
+        filter: {
+          type: "faceted",
+          options: [
+            { label: "Completed", value: "COMPLETED" },
+            { label: "Incomplete", value: "INCOMPLETE" },
+            { label: "Missing", value: "MISSING" },
+          ],
+        },
+      },
+      cell: ({ row }) => {
+        const status = row.getValue("status") as Timesheet["status"];
 
-      const variant =
-        status === "COMPLETED"
-          ? "bg-green-100 text-green-700"
-          : status === "INCOMPLETE"
-          ? "bg-yellow-100 text-yellow-700"
-          : "bg-pink-100 text-pink-700";
+        const variant =
+          status === "COMPLETED"
+            ? "bg-green-100 text-green-700"
+            : status === "INCOMPLETE"
+            ? "bg-yellow-100 text-yellow-700"
+            : "bg-pink-100 text-pink-700";
 
-      return (
-        <Badge className={`${variant} rounded px-2 py-1 text-xs font-medium`}>
-          {status}
-        </Badge>
-      );
+        return (
+          <Badge className={`${variant} rounded px-2 py-1 text-xs font-medium`}>
+            {status}
+          </Badge>
+        );
+      },
     },
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as Timesheet["status"];
-      const id = row.original.id;
+        {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as Timesheet["status"]
+        const id = row.original.id
 
-      let action = "View";
-      if (status === "INCOMPLETE") action = "Update";
-      if (status === "MISSING") action = "Create";
+        let action = "View"
+        if (status === "INCOMPLETE") action = "Update"
+        if (status === "MISSING") action = "Create"
 
-      return (
-        <Link
-          href={`/week-info/${id}`}
-          className="text-blue-600 hover:underline"
-        >
-          {action}
-        </Link>
-      );
+        if (status === "MISSING") {
+          return (
+            <button
+              onClick={() => handleOpenCreate(row.original.date)} // ✅ pass start date
+              className="text-blue-600 hover:underline"
+            >
+              {action}
+            </button>
+          )
+        }
+
+        return (
+          <Link
+            href={`/week-info/${id}`}
+            className="text-blue-600 hover:underline"
+          >
+            {action}
+          </Link>
+        )
+      },
     },
-  },
-];
+  ];
+}
