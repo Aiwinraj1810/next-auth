@@ -9,6 +9,7 @@ import {
   getFilteredRowModel,
   useReactTable,
   ColumnFiltersState,
+  getPaginationRowModel,
 } from "@tanstack/react-table"
 
 import {
@@ -29,6 +30,23 @@ import {
 import { Button } from "@/components/ui/button"
 import { Check, ChevronDown } from "lucide-react"
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -38,7 +56,8 @@ export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] =
+    React.useState<ColumnFiltersState>([])
 
   const memoizedColumns = React.useMemo(() => columns, [columns])
   const memoizedData = React.useMemo(() => data, [data])
@@ -50,6 +69,12 @@ export function DataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
   })
 
   // Current filter value for the "status" column
@@ -58,50 +83,73 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      {/* ✅ Shadcn DropdownMenu for Status filter */}
-      {statusColumn && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
-              {currentValue ? currentValue : "Filter by Status"}
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem
-              onClick={() => statusColumn.setFilterValue(undefined)}
-            >
-              {!currentValue && <Check className="mr-2 h-4 w-4" />}
-              All
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => statusColumn.setFilterValue("COMPLETED")}
-            >
-              {currentValue === "COMPLETED" && (
-                <Check className="mr-2 h-4 w-4" />
-              )}
-              Completed
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => statusColumn.setFilterValue("INCOMPLETE")}
-            >
-              {currentValue === "INCOMPLETE" && (
-                <Check className="mr-2 h-4 w-4" />
-              )}
-              Incomplete
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => statusColumn.setFilterValue("MISSING")}
-            >
-              {currentValue === "MISSING" && (
-                <Check className="mr-2 h-4 w-4" />
-              )}
-              Missing
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <div className="flex items-center justify-between">
+        {/* ✅ Shadcn DropdownMenu for Status filter */}
+        {statusColumn && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                {currentValue ? currentValue : "Filter by Status"}
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => statusColumn.setFilterValue(undefined)}
+              >
+                {!currentValue && <Check className="mr-2 h-4 w-4" />}
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => statusColumn.setFilterValue("COMPLETED")}
+              >
+                {currentValue === "COMPLETED" && (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
+                Completed
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => statusColumn.setFilterValue("INCOMPLETE")}
+              >
+                {currentValue === "INCOMPLETE" && (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
+                Incomplete
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => statusColumn.setFilterValue("MISSING")}
+              >
+                {currentValue === "MISSING" && (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
+                Missing
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
+        {/* ✅ Rows per page select */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <Select
+            value={String(table.getState().pagination.pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
+            <SelectTrigger className="w-[80px]">
+              <SelectValue placeholder="10" />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 30, 50].map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* ✅ Table */}
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
@@ -147,6 +195,42 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
+
+      {/* ✅ Pagination controls */}
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => table.previousPage()}
+              aria-disabled={!table.getCanPreviousPage()}
+              className={
+                !table.getCanPreviousPage() ? "pointer-events-none opacity-50" : ""
+              }
+            />
+          </PaginationItem>
+
+          {Array.from({ length: table.getPageCount() }).map((_, i) => (
+            <PaginationItem key={i}>
+              <PaginationLink
+                onClick={() => table.setPageIndex(i)}
+                isActive={table.getState().pagination.pageIndex === i}
+              >
+                {i + 1}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => table.nextPage()}
+              aria-disabled={!table.getCanNextPage()}
+              className={
+                !table.getCanNextPage() ? "pointer-events-none opacity-50" : ""
+              }
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   )
 }
