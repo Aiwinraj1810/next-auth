@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Check, ChevronDown } from "lucide-react";
-import { format } from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 
 import {
   Pagination,
@@ -66,8 +66,13 @@ export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+   const today = new Date();
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+    // ✅ Default range → current month
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(today),
+    to: endOfMonth(today),
+  });
 
   const memoizedColumns = useMemo(() => columns, [columns]);
   const memoizedData = useMemo(() => data, [data]);
@@ -93,11 +98,21 @@ export function DataTable<TData, TValue>({
 
   const dateColumn = table.getColumn("date");
 
+   // ✅ Apply default filter when mounted
+  useMemo(() => {
+    if (dateColumn && dateRange?.from && dateRange?.to) {
+      dateColumn.setFilterValue({
+        from: dateRange.from.getTime(),
+        to: dateRange.to.getTime(),
+      });
+    }
+  }, [dateColumn]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-           {/* ✅ Date range filter */}
+          {/* ✅ Date range filter */}
           {dateColumn && (
             <Popover>
               <PopoverTrigger asChild>
@@ -184,8 +199,6 @@ export function DataTable<TData, TValue>({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
-         
         </div>
       </div>
 
