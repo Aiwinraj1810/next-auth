@@ -6,7 +6,7 @@ import {
 } from "@/components/data-table/data-table"
 
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
-import { DataTableFilterList } from "@/components/data-table/data-table-filter-list"
+import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu"
 import { DataTablePagination } from "@/components/data-table/data-table-pagination"
 
 import { useDataTable } from "@/hooks/use-data-table"
@@ -28,25 +28,29 @@ export function DataTable<TData, TValue>({
     pageCount,
   })
 
+  // Grab the column object for "status" from the table
+  const statusColumn = table.getColumn("status")
+
   return (
     <div className="space-y-4">
-      {/* Top Toolbar with only filters */}
-   <DataTableToolbar table={table}>
-  <div className="flex gap-2">
-    {/* Custom Date Range Picker (replace later with real one) */}
-    <button className="px-3 py-1 border rounded">Date Range</button>
-    {/* Built-in Status filter */}
-    <DataTableFilterList table={table} />
-  </div>
-</DataTableToolbar>
-
+      {/* Toolbar with Status Filter */}
+      <DataTableToolbar table={table}>
+        {statusColumn && (
+          <DataTableFilterMenu
+            table={table}
+          
+            title="Status"
+          />
+        )}
+      </DataTableToolbar>
 
       {/* Table */}
       <div className="rounded-md border">
         <ShadcnDataTable table={table} />
       </div>
 
-   
+      {/* Pagination */}
+      <DataTablePagination table={table} />
     </div>
   )
 }

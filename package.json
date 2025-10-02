@@ -31,6 +31,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.544.0",
     "mongoose": "^8.18.3",
+    "motion": "^12.23.22",
     "nanoid": "^5.1.6",
     "next": "15.5.4",
     "next-auth": "^5.0.0-beta.29",
