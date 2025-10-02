@@ -97,6 +97,50 @@ export function DataTable<TData, TValue>({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
+           {/* ✅ Date range filter */}
+          {dateColumn && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 w-[260px] justify-start"
+                >
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    setDateRange(range);
+
+                    if (range?.from && range?.to) {
+                      dateColumn.setFilterValue({
+                        from: range.from.getTime(),
+                        to: range.to.getTime(),
+                      });
+                    } else {
+                      dateColumn.setFilterValue(undefined);
+                    }
+                  }}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
           {/* ✅ Status filter */}
           {statusColumn && (
             <DropdownMenu>
@@ -141,50 +185,7 @@ export function DataTable<TData, TValue>({
             </DropdownMenu>
           )}
 
-          {/* ✅ Date range filter */}
-          {dateColumn && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 w-[260px] justify-start"
-                >
-                  <CalendarIcon className="h-4 w-4 opacity-50" />
-                  {dateRange?.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  onSelect={(range) => {
-                    setDateRange(range);
-
-                    if (range?.from && range?.to) {
-                      dateColumn.setFilterValue({
-                        from: range.from.getTime(),
-                        to: range.to.getTime(),
-                      });
-                    } else {
-                      dateColumn.setFilterValue(undefined);
-                    }
-                  }}
-                  numberOfMonths={1}
-                />
-              </PopoverContent>
-            </Popover>
-          )}
+         
         </div>
       </div>
 
