@@ -147,7 +147,9 @@ export default function AddEntryModal({
             </label>
             <Textarea
               placeholder="Write text here..."
-              {...register("description", { required: "Description is required" })}
+              {...register("description", {
+                required: "Description is required",
+              })}
             />
             {errors.description && (
               <p className="text-red-500 text-sm mt-1">
@@ -157,19 +159,49 @@ export default function AddEntryModal({
           </div>
 
           {/* Hours */}
+          {/* Hours */}
           <div>
             <label className="block text-sm font-medium mb-1">Hours *</label>
-            <Input
-              type="number"
-              min={1}
-              max={40}
-              {...register("hours", {
-                valueAsNumber: true,
-                required: "Hours are required",
-                min: { value: 1, message: "Minimum 1 hour" },
-                max: { value: 40, message: "Maximum 40 hours" },
-              })}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const current = watch("hours") || 0;
+                  if (current > 1)
+                    setValue("hours", current - 1, { shouldValidate: true });
+                }}
+              >
+                -
+              </Button>
+
+              <Input
+                type="number"
+                readOnly
+                value={watch("hours") || 0}
+                className="w-16 text-center"
+                {...register("hours", {
+                  valueAsNumber: true,
+                  required: "Hours are required",
+                  min: { value: 1, message: "Minimum 1 hour" },
+                  max: { value: 40, message: "Maximum 40 hours" },
+                })}
+              />
+
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const current = watch("hours") || 0;
+                  if (current < 40)
+                    setValue("hours", current + 1, { shouldValidate: true });
+                }}
+              >
+                +
+              </Button>
+            </div>
             {errors.hours && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.hours.message}
@@ -211,10 +243,12 @@ export default function AddEntryModal({
                       });
                     }
                   }}
-                  disabled={[
-                    weekStart ? { before: new Date(weekStart) } : undefined,
-                    weekEnd ? { after: new Date(weekEnd) } : undefined,
-                  ].filter(Boolean) as any}
+                  disabled={
+                    [
+                      weekStart ? { before: new Date(weekStart) } : undefined,
+                      weekEnd ? { after: new Date(weekEnd) } : undefined,
+                    ].filter(Boolean) as any
+                  }
                   initialFocus
                 />
               </PopoverContent>
@@ -235,10 +269,7 @@ export default function AddEntryModal({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !isValid}
-            >
+            <Button type="submit" disabled={mutation.isPending || !isValid}>
               {mutation.isPending ? "Saving..." : "Add Entry"}
             </Button>
           </div>

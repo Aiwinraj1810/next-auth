@@ -1,12 +1,13 @@
 "use client";
 
-import { getColumns, Timesheet } from "./columns";
-import { DataTable } from "./data-table";
+import { getColumns } from "../../dashboard/columns";
+import { DataTable } from "../../dashboard/data-table";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
-import AddEntryModal from "../components/AddEntryModal";
-import { transformData } from "./lib/timesheet-helpers";
+import AddEntryModal from "../../components/AddEntryModal";
+import { transformData } from "../../dashboard/lib/timesheet-helpers";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 async function fetchTimesheets(): Promise<any[]> {
   const res = await api.get("/timesheets?userId=user123");
@@ -39,25 +40,22 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto py-10 space-y-6">
+    <div className="container mx-auto space-y-6 px-4 sm:px-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Your Timesheets</h1>
+        <h1 className="text-lg sm:text-xl font-semibold">Your Timesheets</h1>
         <AddEntryModal
           open={openCreateModal}
           setOpen={setOpenCreateModal}
           weekStart={weekRange.start}
           weekEnd={weekRange.end}
         />
-        {/* <button
-          onClick={() => setOpenCreateModal(true)}
-          className="bg-blue-600 text-white px-3 py-1 rounded"
-        >
-          + Add Entry
-        </button> */}
       </div>
 
       {isLoading ? (
-        <p>Loading...</p>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-500 text-sm">Loading timesheets...</span>
+        </div>
       ) : (
         <DataTable columns={getColumns(handleOpenCreate)} data={data} />
       )}

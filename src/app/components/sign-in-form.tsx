@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { login } from "@/lib/actions/auth";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -75,7 +76,27 @@ export default function SignInPage() {
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
+            {/* GitHub Login Button */}
+          <button
+            onClick={() => login()}
+            className="w-full bg-gray-800 text-white py-2 rounded hover:bg-gray-900 flex items-center justify-center gap-2"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.26.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.744.083-.73.083-.73 1.205.085 1.84 1.238 1.84 1.238 1.07 1.835 2.805 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.304-5.466-1.332-5.466-5.932 0-1.31.47-2.382 1.237-3.22-.125-.304-.536-1.526.118-3.176 0 0 1.01-.323 3.3 1.23a11.52 11.52 0 013.003-.404c1.02.005 2.047.137 3.003.404 2.29-1.553 3.298-1.23 3.298-1.23.656 1.65.245 2.872.12 3.176.77.838 1.236 1.91 1.236 3.22 0 4.61-2.805 5.625-5.476 5.922.43.37.814 1.103.814 2.222 0 1.606-.015 2.898-.015 3.293 0 .32.218.694.825.576C20.565 21.796 24 17.298 24 12c0-6.63-5.373-12-12-12z"
+              />
+            </svg>
+            Sign in with GitHub
+          </button>
           </form>
+          <h1 className="mt-4">Dummy Credentials :</h1>
+          <p className="mt-0 font-semibold">Email : <span>username@example.com</span></p>
+          <p className="mt-0 font-semibold">Password : <span>password123</span></p>
         </div>
       </div>
 
