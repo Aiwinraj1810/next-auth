@@ -155,3 +155,10 @@ Week info page (daily breakdown, progress bar, responsive layout): ~1 hour
 Styling, polish, bug fixes, README: ~1.5 hours
 
 Total: ~9.5 hours
+
+
+# GitHub Provider (for OAuth login)
+AUTH_SECRET="DEqxGHceub2WvVI3hUY7t+NCgaJqAPbpiXW6BusI19w=" # Added by `npx auth`. Read more: https://cli.authjs.dev
+AUTH_GITHUB_ID="Ov23li18WsBvqQw5DHRI"
+AUTH_GITHUB_SECRET="d82f109acee4ca344195d8b5c7e9587449719156"
+MONGODB_URI="mongodb+srv://Aiwinraj:AppuPappu%40181001@testcluster.cpfht.mongodb.net/?retryWrites=true&w=majority&appName=TestCluster"
