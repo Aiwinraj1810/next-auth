@@ -27,7 +27,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronDown } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown } from "lucide-react";
+import { format } from "date-fns";
 
 import {
   Pagination,
@@ -49,6 +50,12 @@ import {
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "../components/DateRangePicker";
 import { useMemo, useState } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -136,34 +143,48 @@ export function DataTable<TData, TValue>({
 
           {/* ✅ Date range filter */}
           {dateColumn && (
-            <DateRangePicker
-              value={dateRange}
-              onChange={(range) => {
-                setDateRange(range);
-                dateColumn.setFilterValue(range);
-              }}
-            />
-          )}
-        </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 w-[260px] justify-start"
+                >
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    setDateRange(range);
 
-        {/* ✅ Rows per page select */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select
-            value={String(table.getState().pagination.pageSize)}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger className="w-[80px]">
-              <SelectValue placeholder="10" />
-            </SelectTrigger>
-            <SelectContent>
-              {[10, 20, 30, 50].map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                    if (range?.from && range?.to) {
+                      dateColumn.setFilterValue({
+                        from: range.from.getTime(),
+                        to: range.to.getTime(),
+                      });
+                    } else {
+                      dateColumn.setFilterValue(undefined);
+                    }
+                  }}
+                  numberOfMonths={1}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
       </div>
 
@@ -217,43 +238,66 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* ✅ Pagination controls */}
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => table.previousPage()}
-              aria-disabled={!table.getCanPreviousPage()}
-              className={
-                !table.getCanPreviousPage()
-                  ? "pointer-events-none opacity-50"
-                  : ""
-              }
-            />
-          </PaginationItem>
-
-          {Array.from({ length: table.getPageCount() }).map((_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
-                onClick={() => table.setPageIndex(i)}
-                isActive={table.getState().pagination.pageIndex === i}
-              >
-                {i + 1}
-              </PaginationLink>
+      <div className="flex w-full justify-between items-center">
+        {/* ✅ Rows per page select */}
+        <div className="flex w-full items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <Select
+            value={String(table.getState().pagination.pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
+            <SelectTrigger className="w-[80px]">
+              <SelectValue placeholder="10" />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 30, 50].map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* ✅ Pagination controls */}
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => table.previousPage()}
+                aria-disabled={!table.getCanPreviousPage()}
+                className={
+                  !table.getCanPreviousPage()
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
+              />
             </PaginationItem>
-          ))}
 
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => table.nextPage()}
-              aria-disabled={!table.getCanNextPage()}
-              className={
-                !table.getCanNextPage() ? "pointer-events-none opacity-50" : ""
-              }
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+            {Array.from({ length: table.getPageCount() }).map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  onClick={() => table.setPageIndex(i)}
+                  isActive={table.getState().pagination.pageIndex === i}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => table.nextPage()}
+                aria-disabled={!table.getCanNextPage()}
+                className={
+                  !table.getCanNextPage()
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }
