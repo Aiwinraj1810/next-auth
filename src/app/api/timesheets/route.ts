@@ -37,10 +37,8 @@ export async function POST(req: Request) {
 
   const start = startOfWeek(new Date(assignedDate), { weekStartsOn: 1 }) // Monday
   const end = endOfWeek(new Date(assignedDate), { weekStartsOn: 1 })
-  console.log("week end", end)
   const weekStart = formatISO(start, { representation: "date" })
   const weekEnd = formatISO(end, { representation: "date" })
-  console.log("weeknedasda : ", weekEnd)
 
   // find or create timesheet for this week
   let timesheet = await Timesheet.findOne({ userId, weekStart })
@@ -76,7 +74,6 @@ export async function POST(req: Request) {
 
   timesheet.totalHours = totalHours
   timesheet.status = status
-  console.log("final enrty :", timesheet)
   await timesheet.save()
 
   return NextResponse.json(timesheet)

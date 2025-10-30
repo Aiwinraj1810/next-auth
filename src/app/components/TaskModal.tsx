@@ -85,7 +85,6 @@ export default function TaskModal({
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      console.log("data in form : ", entry)
       if (entry) {
         // ✅ Edit mode
         

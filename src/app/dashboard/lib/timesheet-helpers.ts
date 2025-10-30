@@ -33,8 +33,6 @@ export function transformData(timesheetsFromApi: any[]): Timesheet[] {
         sheetStatus: match.sheetStatus,
       }
     }
-    console.log("Match from helper Fn",match)
-
     return {
       id: index + 999999, // fake ID for missing week
       week: index + 1,
