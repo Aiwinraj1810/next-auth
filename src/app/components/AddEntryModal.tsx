@@ -72,8 +72,10 @@ export default function AddEntryModal({
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
       const res = await api.post("/timesheets", {
-        userId: "user123",
-        ...data,
+        data: {
+          userId: "user123",
+          ...data,
+        },
       });
       return res.data;
     },
@@ -82,6 +84,9 @@ export default function AddEntryModal({
       setOpen(false);
       reset();
     },
+    onError:(error)=>[
+      console.log("Post error : ", error)
+    ]
   });
 
   const onSubmit = (data: FormValues) => {

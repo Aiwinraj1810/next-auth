@@ -92,7 +92,7 @@ export function DataTable<TData, TValue>({
   });
 
   // Current filter value for the "status" column
-  const statusColumn = table.getColumn("status");
+  const statusColumn = table.getColumn("sheetStatus");
   const currentStatus = (statusColumn?.getFilterValue() as string) ?? "";
 
   const dateColumn = table.getColumn("date");

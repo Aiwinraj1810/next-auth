@@ -1,37 +1,41 @@
-"use client"
+"use client";
 
-import { useForm } from "react-hook-form"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select"
-import api from "@/lib/axios"
-import { useEffect } from "react"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+} from "@/components/ui/select";
+import api from "@/lib/axios";
+import { useEffect } from "react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 
 type FormValues = {
-  project: string
-  typeOfWork: string
-  description: string
-  hours: number
-  assignedDate: Date
-}
+  project: string;
+  typeOfWork: string;
+  description: string;
+  hours: number;
+  assignedDate: Date;
+};
 
 export default function TaskModal({
   weekId,
@@ -40,11 +44,11 @@ export default function TaskModal({
   open,
   setOpen,
 }: {
-  weekId: string
-  defaultDate?: string
-  entry?: any // edit mode if provided
-  open: boolean
-  setOpen: (open: boolean) => void
+  weekId: string;
+  defaultDate?: string;
+  entry?: any; // edit mode if provided
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }) {
   const {
     register,
@@ -56,54 +60,60 @@ export default function TaskModal({
   } = useForm<FormValues>({
     mode: "onChange",
     defaultValues: { assignedDate: undefined },
-  })
+  });
 
-  const queryClient = useQueryClient()
-  const assignedDate = watch("assignedDate")
+  const queryClient = useQueryClient();
+  const assignedDate = watch("assignedDate");
 
   // Populate form in edit or add mode
   useEffect(() => {
     if (open) {
       if (entry) {
-        setValue("project", entry.project)
-        setValue("typeOfWork", entry.typeOfWork)
-        setValue("description", entry.description)
-        setValue("hours", entry.hours)
-        setValue("assignedDate", new Date(entry.assignedDate))
+        setValue("project", entry.project);
+        setValue("typeOfWork", entry.typeOfWork);
+        setValue("description", entry.description);
+        setValue("hours", entry.hours);
+        setValue("assignedDate", new Date(entry.assignedDate));
       } else {
-        reset()
+        reset();
         if (defaultDate) {
-          setValue("assignedDate", new Date(defaultDate))
+          setValue("assignedDate", new Date(defaultDate));
         }
       }
     }
-  }, [open, entry, defaultDate, setValue, reset])
+  }, [open, entry, defaultDate, setValue, reset]);
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
+      console.log("data in form : ", entry)
       if (entry) {
         // ✅ Edit mode
-        const res = await api.patch(`/timesheet-entries/${entry._id}`, data)
-        return res.data
+        
+        const res = await api.put(`/timesheet-entries/${entry.documentId}`, {
+          data: { ...data, timesheet: entry.timesheet?.id, },
+        });
+        return res.data;
       } else {
         // ✅ Add mode
         const res = await api.post("/timesheets", {
-          userId: "user123",
-          ...data,
-        })
-        return res.data
+          data: {
+            userId: "user123",
+            ...data,
+          },
+        });
+        return res.data;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["weekEntries", weekId] })
-      setOpen(false)
-      reset()
+      queryClient.invalidateQueries({ queryKey: ["weekEntries", weekId] });
+      setOpen(false);
+      reset();
     },
-  })
+  });
 
   const onSubmit = (data: FormValues) => {
-    mutation.mutate(data)
-  }
+    mutation.mutate(data);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -128,7 +138,9 @@ export default function TaskModal({
 
           {/* Type of Work */}
           <div>
-            <label className="block text-sm font-medium mb-1">Type of Work *</label>
+            <label className="block text-sm font-medium mb-1">
+              Type of Work *
+            </label>
             <Select
               onValueChange={(val) =>
                 setValue("typeOfWork", val, { shouldValidate: true })
@@ -140,7 +152,9 @@ export default function TaskModal({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Bug Fixes">Bug Fixes</SelectItem>
-                <SelectItem value="Feature Development">Feature Development</SelectItem>
+                <SelectItem value="Feature Development">
+                  Feature Development
+                </SelectItem>
                 <SelectItem value="Code Review">Code Review</SelectItem>
               </SelectContent>
             </Select>
@@ -153,9 +167,13 @@ export default function TaskModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-1">Description *</label>
+            <label className="block text-sm font-medium mb-1">
+              Description *
+            </label>
             <Textarea
-              {...register("description", { required: "Description is required" })}
+              {...register("description", {
+                required: "Description is required",
+              })}
             />
             {errors.description && (
               <p className="text-red-500 text-sm mt-1">
@@ -187,7 +205,9 @@ export default function TaskModal({
 
           {/* Assigned Date */}
           <div>
-            <label className="block text-sm font-medium mb-1">Assigned Date *</label>
+            <label className="block text-sm font-medium mb-1">
+              Assigned Date *
+            </label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -195,34 +215,42 @@ export default function TaskModal({
                   className="w-full justify-start text-left font-normal"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {assignedDate
-                    ? format(assignedDate, "PPP")
-                    : <span>Pick a date</span>}
+                  {assignedDate ? (
+                    format(assignedDate, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={assignedDate}
-                  onSelect={(date) => date && setValue("assignedDate", date, { shouldValidate: true })}
+                  onSelect={(date) =>
+                    date &&
+                    setValue("assignedDate", date, { shouldValidate: true })
+                  }
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
             {errors.assignedDate && (
-              <p className="text-red-500 text-sm mt-1">Assigned date is required</p>
+              <p className="text-red-500 text-sm mt-1">
+                Assigned date is required
+              </p>
             )}
           </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !isValid}
-            >
+            <Button type="submit" disabled={mutation.isPending || !isValid}>
               {mutation.isPending
                 ? "Saving..."
                 : entry
@@ -233,5 +261,5 @@ export default function TaskModal({
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

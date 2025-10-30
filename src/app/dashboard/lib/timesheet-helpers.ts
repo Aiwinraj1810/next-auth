@@ -27,18 +27,19 @@ export function transformData(timesheetsFromApi: any[]): Timesheet[] {
 
     if (match) {
       return {
-        id: match._id,
+        id: match.documentId,
         week: index + 1,
         date: match.weekStart,
-        status: match.status,
+        sheetStatus: match.sheetStatus,
       }
     }
+    console.log("Match from helper Fn",match)
 
     return {
       id: index + 999999, // fake ID for missing week
       week: index + 1,
       date: weekStart,
-      status: "MISSING",
+      sheetStatus: "MISSING",
     }
   })
 }

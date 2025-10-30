@@ -19,7 +19,7 @@ export type Timesheet = {
   id: number;
   week: number;
   date: string;
-  status: "COMPLETED" | "INCOMPLETE" | "MISSING";
+  sheetStatus: "COMPLETED" | "INCOMPLETE" | "MISSING";
 };
 
 // ⚡ Turn columns into a function
@@ -60,7 +60,7 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
       },
     },
     {
-      accessorKey: "status",
+      accessorKey: "sheetStatus",
       header: "Status",
       meta: {
         filter: {
@@ -73,7 +73,7 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
         },
       },
       cell: ({ row }) => {
-        const status = row.getValue("status") as Timesheet["status"];
+        const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"];
 
         const variant =
           status === "COMPLETED"
@@ -93,8 +93,9 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
-        const status = row.getValue("status") as Timesheet["status"]
+        const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"]
         const id = row.original.id
+ 
 
         let action = "View"
         if (status === "INCOMPLETE") action = "Update"

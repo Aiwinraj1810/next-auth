@@ -10,9 +10,12 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 async function fetchTimesheets(): Promise<any[]> {
-  const res = await api.get("/timesheets?userId=user123");
-  return res.data;
+  const res = await api.get(
+    `/timesheets?filters[userId][$eq]=user123&populate=*`
+  );
+  return res.data.data || [];
 }
+
 
 export default function DashboardPage() {
   const { data: raw = [], isLoading } = useQuery({
