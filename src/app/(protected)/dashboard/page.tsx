@@ -60,7 +60,7 @@ export default function DashboardPage() {
           <span className="ml-2 text-gray-500 text-sm">Loading timesheets...</span>
         </div>
       ) : (
-        <DataTable columns={getColumns(handleOpenCreate)} data={data} />
+        <DataTable columns={getColumns(handleOpenCreate)} endpoint="/api/timesheets"/>
       )}
     </div>
   );

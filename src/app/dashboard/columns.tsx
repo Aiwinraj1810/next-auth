@@ -17,6 +17,7 @@ declare module "@tanstack/react-table" {
 // Define the Timesheet type
 export type Timesheet = {
   id: number;
+  documentId : string
   week: number;
   date: string;
   sheetStatus: "COMPLETED" | "INCOMPLETE" | "MISSING";
@@ -94,7 +95,8 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
       header: "Actions",
       cell: ({ row }) => {
         const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"]
-        const id = row.original.id
+
+        const id = row.original.documentId
  
 
         let action = "View"
