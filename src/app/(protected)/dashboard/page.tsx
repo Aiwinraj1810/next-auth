@@ -10,14 +10,14 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { startOfMonth, endOfMonth, formatISO } from "date-fns";
+import { useLocale } from "@/app/context/LocaleContext";
 
 async function fetchTimesheets({
   queryKey,
 }: {
-  queryKey: [string, number, number, DateRange | undefined];
+  queryKey: [string, number, number, DateRange | undefined, string];
 }) {
-  const [, page, pageSize, dateRange] = queryKey;
-
+  const [, page, pageSize, dateRange, locale] = queryKey;
   const from = dateRange?.from
     ? formatISO(dateRange.from, { representation: "date" })
     : undefined;
@@ -26,39 +26,49 @@ async function fetchTimesheets({
     : undefined;
 
   const res = await api.get("/timesheets/full", {
-    params: {
-      userId: "user123",
-      from,
-      to,
-      page,
-      pageSize,
-    },
+    params: { userId: "user123", from, to, page, pageSize, locale },
   });
 
-  return res.data.data || [];
+  return {
+    data: res.data.data || [],
+    pagination: res.data.meta?.pagination || {
+      page: 1,
+      pageSize: 10,
+      pageCount: 1,
+      total: 0,
+    },
+  };
 }
 
 export default function DashboardPage() {
+  const { locale } = useLocale();
   // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   // Default date range = current month
-  const [dateRange, setDateRange] = useState<DateRange>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
 
-  const { data: raw = [], isLoading, isFetching } = useQuery({
-    queryKey: ["timesheets", page, pageSize, dateRange],
+  const {
+    data: response,
+    isLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: ["timesheets", page, pageSize, dateRange, locale],
     queryFn: fetchTimesheets,
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
-  const data = transformData(raw);
+  const data = transformData(response?.data || []);
+  const pagination = response?.pagination;
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [weekRange, setWeekRange] = useState<{ start?: string; end?: string }>({});
+  const [weekRange, setWeekRange] = useState<{ start?: string; end?: string }>(
+    {}
+  );
 
   function handleOpenCreate(weekStart: string) {
     const start = new Date(weekStart);
@@ -99,9 +109,10 @@ export default function DashboardPage() {
           pageSize={pageSize}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
-          isFetching={isFetching}
           dateRange={dateRange}
-          setDateRange={setDateRange} // 👈 Pass to table
+          setDateRange={setDateRange}
+          isFetching={isFetching}
+          totalPages={pagination?.pageCount || 1}
         />
       )}
     </div>

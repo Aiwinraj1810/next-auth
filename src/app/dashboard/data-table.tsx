@@ -58,19 +58,14 @@ import { Calendar } from "@/components/ui/calendar";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-
-  // ✅ Server-side pagination props
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
-
-  // ✅ Date range control (lifted state)
   dateRange: DateRange | undefined;
   setDateRange: (range: DateRange | undefined) => void;
-
-  // ✅ For loading state (optional)
   isFetching?: boolean;
+  totalPages: number; 
 }
 
 export function DataTable<TData, TValue>({
@@ -83,6 +78,7 @@ export function DataTable<TData, TValue>({
   dateRange,
   setDateRange,
   isFetching,
+   totalPages,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -243,7 +239,10 @@ export function DataTable<TData, TValue>({
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -285,6 +284,7 @@ export function DataTable<TData, TValue>({
         </div>
 
         {/* Pagination Controls */}
+        {/* ✅ Dynamic Pagination */}
         <Pagination className="flex flex-wrap justify-center sm:justify-end gap-2">
           <PaginationContent>
             <PaginationItem>
@@ -295,8 +295,8 @@ export function DataTable<TData, TValue>({
               />
             </PaginationItem>
 
-            {/* Just simple pages (1,2,3...) */}
-            {[...Array(5)].map((_, i) => (
+            {/* ✅ Dynamically render based on totalPages */}
+            {Array.from({ length: totalPages }).map((_, i) => (
               <PaginationItem key={i}>
                 <PaginationLink
                   onClick={() => onPageChange(i + 1)}
@@ -309,8 +309,11 @@ export function DataTable<TData, TValue>({
 
             <PaginationItem>
               <PaginationNext
-                onClick={() => onPageChange(page + 1)}
-                className=""
+                onClick={() => onPageChange(Math.min(page + 1, totalPages))}
+                aria-disabled={page === totalPages}
+                className={
+                  page === totalPages ? "pointer-events-none opacity-50" : ""
+                }
               />
             </PaginationItem>
           </PaginationContent>
