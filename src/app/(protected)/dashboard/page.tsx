@@ -5,20 +5,24 @@ import { DataTable } from "../../dashboard/data-table";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import AddEntryModal from "../../components/AddEntryModal";
-import { transformData } from "../../dashboard/lib/timesheet-helpers";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { useLocale } from "@/app/context/LocaleContext";
-import { useScopedI18n } from "@/app/i18n"; // 👈 use scoped version
+import { useScopedI18n } from "@/app/i18n";
 
-async function fetchTimesheets({
+//
+// ✅ Fetch timesheet summaries directly from Strapi
+//
+async function fetchTimesheetSummaries({
   queryKey,
 }: {
   queryKey: [string, number, number, DateRange | undefined, string];
 }) {
   const [, page, pageSize, dateRange, locale] = queryKey;
+
+  // Format the date range to ISO strings (YYYY-MM-DD)
   const from = dateRange?.from
     ? formatISO(dateRange.from, { representation: "date" })
     : undefined;
@@ -26,13 +30,23 @@ async function fetchTimesheets({
     ? formatISO(dateRange.to, { representation: "date" })
     : undefined;
 
-  const res = await api.get("/timesheets/full", {
-    params: { userId: "user123", from, to, page, pageSize, locale },
-  });
+  // Build query params for Strapi pagination & filtering
+  const params: Record<string, any> = {
+    "pagination[page]": page,
+    "pagination[pageSize]": pageSize,
+    sort: "weekStart:desc",
+    locale,
+  };
+
+  if (from) params["filters[weekStart][$gte]"] = from;
+  if (to) params["filters[weekEnd][$lte]"] = to;
+
+  const res = await api.get("/timesheet-summaries", { params });
+  const { data, meta } = res.data;
 
   return {
-    data: res.data.data || [],
-    pagination: res.data.meta?.pagination || {
+    data: data || [],
+    pagination: meta?.pagination || {
       page: 1,
       pageSize: 10,
       pageCount: 1,
@@ -41,10 +55,14 @@ async function fetchTimesheets({
   };
 }
 
+//
+// ✅ Dashboard Component
+//
 export default function DashboardPage() {
   const { locale } = useLocale();
   const t = useScopedI18n("dashboard");
 
+  // Pagination + filters
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -52,17 +70,27 @@ export default function DashboardPage() {
     to: endOfMonth(new Date()),
   });
 
-  const { data: response, isLoading, isFetching } = useQuery({
-    queryKey: ["timesheets", page, pageSize, dateRange, locale],
-    queryFn: fetchTimesheets,
+  //
+  // ✅ Fetch from Strapi
+  //
+  const {
+    data: response,
+    isLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: ["timesheet-summaries", page, pageSize, dateRange, locale],
+    queryFn: fetchTimesheetSummaries,
     placeholderData: (prev) => prev,
   });
 
-  const data = transformData(response?.data || []);
-  const pagination = response?.pagination;
+  const summaries = response?.data ?? [];
+  const pagination = response?.pagination ?? { page: 1, pageCount: 1 };
 
+  // Modal handling for adding entries
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [weekRange, setWeekRange] = useState<{ start?: string; end?: string }>({});
+  const [weekRange, setWeekRange] = useState<{ start?: string; end?: string }>(
+    {}
+  );
 
   function handleOpenCreate(weekStart: string) {
     const start = new Date(weekStart);
@@ -76,6 +104,20 @@ export default function DashboardPage() {
     setOpenCreateModal(true);
   }
 
+  //
+  // ✅ Transform Strapi data → table-friendly shape
+  //
+  const data = summaries.map((item: any) => ({
+    id: item.id,
+    weekStart: item.weekStart,
+    weekEnd: item.weekEnd,
+    totalHours: item.totalHours,
+    sheetStatus: item.summaryStatus,
+  }));
+
+  //
+  // ✅ Render
+  //
   return (
     <div className="container mx-auto space-y-6 px-4 sm:px-6">
       <div className="flex justify-between items-center">
@@ -95,7 +137,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <DataTable
-          columns={getColumns(handleOpenCreate,t)}
+          columns={getColumns(handleOpenCreate, t)}
           data={data}
           page={page}
           pageSize={pageSize}
@@ -104,7 +146,7 @@ export default function DashboardPage() {
           dateRange={dateRange}
           setDateRange={setDateRange}
           isFetching={isFetching}
-          totalPages={pagination?.pageCount || 1}
+          totalPages={pagination.pageCount || 1}
         />
       )}
     </div>

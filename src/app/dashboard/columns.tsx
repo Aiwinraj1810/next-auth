@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useScopedI18n } from "../i18n"; // 👈 your custom hook
+import { useScopedI18n } from "../i18n";
 
 // ---- Extend ColumnMeta to allow filter configs ----
 declare module "@tanstack/react-table" {
@@ -15,40 +15,37 @@ declare module "@tanstack/react-table" {
   }
 }
 
-// Define the Timesheet type
+// ✅ Updated Timesheet type (matches Strapi’s summary)
 export type Timesheet = {
   id: number;
-  week: number;
-  date: string;
-  sheetStatus: "COMPLETED" | "INCOMPLETE" | "MISSING";
+  weekStart: string;
+  weekEnd?: string;
+  totalHours?: number;
+  sheetStatus: "Completed" | "Incomplete" | "Missing";
 };
 
 // ⚡ Turn columns into a function
 export function getColumns(
-  handleOpenCreate: (weekStart: string) => void, t: ReturnType<typeof useScopedI18n>
+  handleOpenCreate: (weekStart: string) => void,
+  t: ReturnType<typeof useScopedI18n>
 ): ColumnDef<Timesheet>[] {
-
-
   return [
+    // 🗓️ Week range
     {
-      accessorKey: "week",
-      header: t("week"), // "Week #"
-    },
-    {
-      accessorKey: "date",
-      header: t("date"), // "Date"
+      accessorKey: "weekStart",
+      header: t("week"),
       cell: ({ row }) => {
-        const start = new Date(row.getValue("date"));
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6); // full week range
+        const start = new Date(row.original.weekStart);
+        const end = row.original.weekEnd
+          ? new Date(row.original.weekEnd)
+          : new Date(start.setDate(start.getDate() + 6));
 
-        // Use localized date format (will auto-switch for Arabic)
         return `${start.toLocaleDateString(undefined, {
           day: "numeric",
           month: "short",
         })} - ${end.toLocaleDateString(undefined, {
           day: "numeric",
-          month: "long",
+          month: "short",
         })}`;
       },
       filterFn: (row, columnId, filterValue) => {
@@ -64,33 +61,43 @@ export function getColumns(
         return end >= from && start <= to;
       },
     },
+
+    // ⏱️ Total hours
+    {
+      accessorKey: "totalHours",
+      header: t("hours"),
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.totalHours ?? 0}</span>
+      ),
+    },
+
+    // 📊 Status column
     {
       accessorKey: "sheetStatus",
-      header: t("status"), // "Status"
+      header: t("status"),
       meta: {
         filter: {
           type: "faceted",
           options: [
-            { label: t("completed"), value: "COMPLETED" },
-            { label: t("incomplete"), value: "INCOMPLETE" },
-            { label: t("missing"), value: "MISSING" },
+            { label: t("completed"), value: "Completed" },
+            { label: t("incomplete"), value: "Incomplete" },
+            { label: t("missing"), value: "Missing" },
           ],
         },
       },
       cell: ({ row }) => {
-        const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"];
-
+        const status = row.original.sheetStatus;
         const variant =
-          status === "COMPLETED"
+          status === "Completed"
             ? "bg-green-100 text-green-700"
-            : status === "INCOMPLETE"
+            : status === "Incomplete"
             ? "bg-yellow-100 text-yellow-700"
             : "bg-pink-100 text-pink-700";
 
         const labelMap: Record<Timesheet["sheetStatus"], string> = {
-          COMPLETED: t("completed"),
-          INCOMPLETE: t("incomplete"),
-          MISSING: t("missing"),
+          Completed: t("completed"),
+          Incomplete: t("incomplete"),
+          Missing: t("missing"),
         };
 
         return (
@@ -100,23 +107,26 @@ export function getColumns(
         );
       },
     },
+
+    // ⚙️ Actions column
     {
       id: "actions",
-      header: t("actions"), // "Actions"
+      header: t("actions"),
       cell: ({ row }) => {
-        const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"];
-        const id = row.original.id;
+        const status = row.original.sheetStatus;
+        const weekStart = row.original.weekStart; // ✅ Key param
 
         let actionKey = "view";
-        if (status === "INCOMPLETE") actionKey = "update";
-        if (status === "MISSING") actionKey = "create";
+        if (status === "Incomplete") actionKey = "update";
+        if (status === "Missing") actionKey = "create";
 
         const actionLabel = t(actionKey);
 
-        if (status === "MISSING") {
+        // 🟡 Missing → opens Add Task modal
+        if (status === "Missing") {
           return (
             <button
-              onClick={() => handleOpenCreate(row.original.date)}
+              onClick={() => handleOpenCreate(weekStart)}
               className="text-blue-600 hover:underline"
             >
               {actionLabel}
@@ -124,9 +134,10 @@ export function getColumns(
           );
         }
 
+        // 🟢 View/Update → navigates by weekStart (not ID)
         return (
           <Link
-            href={`/week-info/${id}`}
+            href={`/week-info/${weekStart}`} // ✅ pass weekStart param
             className="text-blue-600 hover:underline"
           >
             {actionLabel}

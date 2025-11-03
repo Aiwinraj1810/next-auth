@@ -16,48 +16,65 @@ import { Progress } from "@/components/ui/progress";
 import TaskModal from "../../../components/TaskModal";
 import { useState } from "react";
 import DeleteConfirmationModal from "@/app/components/DeleteConfirmationModal";
-import { useScopedI18n } from "@/app/i18n"; // 👈 add i18n hook
+import { useScopedI18n } from "@/app/i18n";
 
 type TimesheetEntry = {
   id: number;
-  documentId: string;
-  project: string;
+  project?: { name: string } | null;
   typeOfWork: string;
   description: string;
   hours: number;
-  assignedDate: string;
+  date: string;
   weekStart: string;
   weekEnd: string;
-  timesheet?: { id: number; documentId: string };
 };
 
-async function fetchWeekEntries(timesheetId: string) {
-  const res = await api.get(
-    `/timesheet-entries?filters[timesheet][documentId][$eq]=${timesheetId}&populate=*`
-  );
-  return res.data.data || [];
+// ✅ Fetch entries based on weekStart/weekEnd
+async function fetchWeekEntries(weekStart: string, weekEnd: string) {
+  const res = await api.get(`/timesheet-entries`, {
+    params: {
+      filters: {
+        weekStart: { $eq: weekStart },
+        weekEnd: { $eq: weekEnd },
+      },
+      populate: "*",
+      sort: ["date:asc"],
+    },
+  });
+  return res.data?.data || [];
 }
 
 export default function WeekInfoPage() {
   const t = useScopedI18n("weekInfo");
   const params = useParams();
-  const id = params.id as string;
+  const weekStartParam = params.id as string;
+ 
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+  // Derive weekEnd (Sunday if Monday is weekStart)
+  const weekStart = parseISO(weekStartParam);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
 
-  const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
-    queryKey: ["weekEntries", id],
-    queryFn: () => fetchWeekEntries(id),
-    enabled: !!id,
-    // placeholderData: (prev) => prev,
-  });
+  const formattedWeekEnd = weekEnd.toISOString().split("T")[0];
+  const validWeekRange = isValid(weekStart) && isValid(weekEnd);
 
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
 
-  // 🌀 Loading state
+  // ✅ Fetch all entries directly
+  const {
+    data: entries = [],
+    isLoading,
+    refetch: refetchEntries,
+  } = useQuery({
+    queryKey: ["weekEntries", weekStartParam],
+    queryFn: () => fetchWeekEntries(weekStartParam, formattedWeekEnd),
+    enabled: !!weekStartParam,
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full w-full py-20">
@@ -66,28 +83,8 @@ export default function WeekInfoPage() {
     );
   }
 
-  // 💤 Empty state
-  if (!data?.length) {
-    return <p className="text-center text-gray-500 py-10">{t("noTasks")}</p>;
-  }
-
-  // ✅ Week range validation
-  const weekStartStr = data?.[0]?.weekStart ?? null;
-  const weekEndStr = data?.[0]?.weekEnd ?? null;
-
-  const weekStart = weekStartStr ? parseISO(weekStartStr) : null;
-  const weekEnd = weekEndStr ? parseISO(weekEndStr) : null;
-
-  const validWeekRange =
-    weekStart && weekEnd && isValid(weekStart) && isValid(weekEnd);
-
-  // ✅ Total hours calculation
-  const totalHours = data.reduce(
-    (sum: number, t: any) => sum + (t.hours || 0),
-    0
-  );
-
-  // ✅ Days of week
+  // ✅ Total hours computed client-side
+  const totalHours = entries.reduce((sum, e) => sum + (e.hours || 0), 0);
   const days = validWeekRange
     ? eachDayOfInterval({ start: weekStart, end: weekEnd })
     : [];
@@ -102,7 +99,7 @@ export default function WeekInfoPage() {
           </h1>
           {validWeekRange ? (
             <p className="text-sm text-gray-500">
-              {format(weekStart!, "d MMM")} - {format(weekEnd!, "d MMM yyyy")}
+              {format(weekStart, "d MMM")} - {format(weekEnd, "d MMM yyyy")}
             </p>
           ) : (
             <p className="text-sm text-gray-400">{t("invalidWeekRange")}</p>
@@ -125,11 +122,11 @@ export default function WeekInfoPage() {
       {/* Daily breakdown */}
       <div className="space-y-6">
         {days.map((day) => {
-          const entriesForDay = data.filter(
-            (entry: any) =>
-              entry.assignedDate &&
-              format(parseISO(entry.assignedDate), "yyyy-MM-dd") ===
-                format(day, "yyyy-MM-dd")
+          const dayStr = format(day, "yyyy-MM-dd");
+          const entriesForDay = entries.filter(
+            (entry) =>
+              entry.date &&
+              format(parseISO(entry.date), "yyyy-MM-dd") === dayStr
           );
 
           return (
@@ -144,9 +141,9 @@ export default function WeekInfoPage() {
 
               {/* Tasks list */}
               <div className="flex-1 space-y-2">
-                {entriesForDay.map((entry: any) => (
+                {entriesForDay.map((entry) => (
                   <div
-                    key={entry.id || entry.documentId}
+                    key={entry.id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between border rounded px-3 py-2 gap-2"
                   >
                     <div className="flex-1">
@@ -160,7 +157,7 @@ export default function WeekInfoPage() {
                         {entry.hours || 0} {t("hrs")}
                       </span>
                       <span className="text-xs text-blue-600 hidden sm:inline">
-                        {entry.project || t("noProject")}
+                        {entry.project?.name || t("noProject")}
                       </span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -172,7 +169,7 @@ export default function WeekInfoPage() {
                           <DropdownMenuItem
                             onClick={() => {
                               setEditingEntry(entry);
-                              setSelectedDate(entry.assignedDate);
+                              setSelectedDate(entry.date);
                               setOpen(true);
                             }}
                           >
@@ -181,7 +178,7 @@ export default function WeekInfoPage() {
                           <DropdownMenuItem
                             className="text-red-600"
                             onClick={() => {
-                              setDeletingEntryId(entry.id || entry.documentId);
+                              setDeletingEntryId(entry.id.toString());
                               setDeleteOpen(true);
                             }}
                           >
@@ -198,7 +195,7 @@ export default function WeekInfoPage() {
                   variant="outline"
                   className="w-full bg-[#E1EFFE] border-blue-400 border-dotted cursor-pointer text-blue-600 text-sm"
                   onClick={() => {
-                    setSelectedDate(format(day, "yyyy-MM-dd"));
+                    setSelectedDate(dayStr);
                     setEditingEntry(null);
                     setOpen(true);
                   }}
@@ -214,11 +211,13 @@ export default function WeekInfoPage() {
       {/* Task Modal */}
       {selectedDate && (
         <TaskModal
-          weekId={id}
+          weekStart={weekStartParam}
+          weekEnd={formattedWeekEnd}
           defaultDate={selectedDate}
           entry={editingEntry}
           open={open}
           setOpen={setOpen}
+          onRefetch={refetchEntries}
         />
       )}
 
@@ -227,7 +226,9 @@ export default function WeekInfoPage() {
         open={deleteOpen}
         setOpen={setDeleteOpen}
         entryId={deletingEntryId}
-        weekId={id}
+        weekStart={weekStartParam}
+        weekEnd={formattedWeekEnd}
+        onRefetch={refetchEntries}
       />
     </div>
   );
