@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import TaskModal from "../../../components/TaskModal";
 import { useState } from "react";
 import DeleteConfirmationModal from "@/app/components/DeleteConfirmationModal";
+import { useScopedI18n } from "@/app/i18n"; // 👈 add i18n hook
 
 type TimesheetEntry = {
   id: number;
@@ -38,24 +39,25 @@ async function fetchWeekEntries(timesheetId: string) {
 }
 
 export default function WeekInfoPage() {
+  const t = useScopedI18n("weekInfo");
   const params = useParams();
   const id = params.id as string;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
 
-const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
-  queryKey: ["weekEntries", id],
-  queryFn: () => fetchWeekEntries(id),
-  enabled: !!id,
-  placeholderData: (prev) => prev, // ✅ React Query v5 safe
-});
+  const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
+    queryKey: ["weekEntries", id],
+    queryFn: () => fetchWeekEntries(id),
+    enabled: !!id,
+    // placeholderData: (prev) => prev,
+  });
 
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<any | null>(null);
 
-  // Handle loading state
+  // 🌀 Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full w-full py-20">
@@ -64,24 +66,28 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
     );
   }
 
-  // Handle empty state
+  // 💤 Empty state
   if (!data?.length) {
-    return <p className="text-center text-gray-500 py-10">No tasks found for this week.</p>;
+    return <p className="text-center text-gray-500 py-10">{t("noTasks")}</p>;
   }
 
-  // ✅ Safely extract and validate week range
+  // ✅ Week range validation
   const weekStartStr = data?.[0]?.weekStart ?? null;
   const weekEndStr = data?.[0]?.weekEnd ?? null;
 
   const weekStart = weekStartStr ? parseISO(weekStartStr) : null;
   const weekEnd = weekEndStr ? parseISO(weekEndStr) : null;
 
-  const validWeekRange = weekStart && weekEnd && isValid(weekStart) && isValid(weekEnd);
+  const validWeekRange =
+    weekStart && weekEnd && isValid(weekStart) && isValid(weekEnd);
 
-  // ✅ Safely calculate total hours
-  const totalHours = data.reduce((sum: number, t: any) => sum + (t.hours || 0), 0);
+  // ✅ Total hours calculation
+  const totalHours = data.reduce(
+    (sum: number, t: any) => sum + (t.hours || 0),
+    0
+  );
 
-  // ✅ Safely build week days (guard if invalid)
+  // ✅ Days of week
   const days = validWeekRange
     ? eachDayOfInterval({ start: weekStart, end: weekEnd })
     : [];
@@ -92,17 +98,18 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
           <h1 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">
-            This week’s timesheet
+            {t("title")}
           </h1>
           {validWeekRange ? (
             <p className="text-sm text-gray-500">
               {format(weekStart!, "d MMM")} - {format(weekEnd!, "d MMM yyyy")}
             </p>
           ) : (
-            <p className="text-sm text-gray-400">Invalid week range</p>
+            <p className="text-sm text-gray-400">{t("invalidWeekRange")}</p>
           )}
         </div>
 
+        {/* Progress bar */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <Progress
             value={(totalHours / 40) * 100}
@@ -110,7 +117,7 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
             className="w-full sm:w-[300px]"
           />
           <span className="text-sm font-medium text-center sm:text-left">
-            {totalHours}/40 hrs
+            {t("hoursProgress", { total: totalHours })}
           </span>
         </div>
       </div>
@@ -145,13 +152,15 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
                     <div className="flex-1">
                       <p className="text-sm font-medium">{entry.typeOfWork}</p>
                       <p className="text-xs text-gray-500">
-                        {entry.description || "No description"}
+                        {entry.description || t("noDescription")}
                       </p>
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-3">
-                      <span className="text-sm">{entry.hours || 0} hrs</span>
+                      <span className="text-sm">
+                        {entry.hours || 0} {t("hrs")}
+                      </span>
                       <span className="text-xs text-blue-600 hidden sm:inline">
-                        {entry.project || "No project"}
+                        {entry.project || t("noProject")}
                       </span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -167,7 +176,7 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
                               setOpen(true);
                             }}
                           >
-                            Edit
+                            {t("edit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600"
@@ -176,7 +185,7 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
                               setDeleteOpen(true);
                             }}
                           >
-                            Delete
+                            {t("delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -194,7 +203,7 @@ const { data = [], isLoading } = useQuery<TimesheetEntry[]>({
                     setOpen(true);
                   }}
                 >
-                  + Add new task
+                  + {t("addNewTask")}
                 </Button>
               </div>
             </div>

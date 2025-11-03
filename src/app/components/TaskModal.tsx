@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useScopedI18n } from "../i18n"; // 👈 import your scoped hook
 
 type FormValues = {
   project: string;
@@ -46,10 +47,12 @@ export default function TaskModal({
 }: {
   weekId: string;
   defaultDate?: string;
-  entry?: any; // edit mode if provided
+  entry?: any;
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
+  const t = useScopedI18n("taskModal"); // 👈 translations under "taskModal"
+
   const {
     register,
     handleSubmit,
@@ -65,7 +68,6 @@ export default function TaskModal({
   const queryClient = useQueryClient();
   const assignedDate = watch("assignedDate");
 
-  // Populate form in edit or add mode
   useEffect(() => {
     if (open) {
       if (entry) {
@@ -86,14 +88,13 @@ export default function TaskModal({
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
       if (entry) {
-        // ✅ Edit mode
-        
+        // Edit mode
         const res = await api.put(`/timesheet-entries/${entry.documentId}`, {
-          data: { ...data, timesheet: entry.timesheet?.id, },
+          data: { ...data, timesheet: entry.timesheet?.id },
         });
         return res.data;
       } else {
-        // ✅ Add mode
+        // Add mode
         const res = await api.post("/timesheets", {
           data: {
             userId: "user123",
@@ -110,23 +111,24 @@ export default function TaskModal({
     },
   });
 
-  const onSubmit = (data: FormValues) => {
-    mutation.mutate(data);
-  };
+  const onSubmit = (data: FormValues) => mutation.mutate(data);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{entry ? "Edit Task" : "Add Task"}</DialogTitle>
+          <DialogTitle>{entry ? t("editTask") : t("addTask")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Project */}
           <div>
-            <label className="block text-sm font-medium mb-1">Project *</label>
+            <label className="block text-sm font-medium mb-1">
+              {t("project")} *
+            </label>
             <Input
-              {...register("project", { required: "Project is required" })}
+              placeholder={t("projectPlaceholder")}
+              {...register("project", { required: t("projectRequired") })}
             />
             {errors.project && (
               <p className="text-red-500 text-sm mt-1">
@@ -138,7 +140,7 @@ export default function TaskModal({
           {/* Type of Work */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Type of Work *
+              {t("typeOfWork")} *
             </label>
             <Select
               onValueChange={(val) =>
@@ -147,19 +149,19 @@ export default function TaskModal({
               value={watch("typeOfWork") || ""}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Choose work type" />
+                <SelectValue placeholder={t("chooseWorkType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Bug Fixes">Bug Fixes</SelectItem>
+                <SelectItem value="Bug Fixes">{t("bugFixes")}</SelectItem>
                 <SelectItem value="Feature Development">
-                  Feature Development
+                  {t("featureDevelopment")}
                 </SelectItem>
-                <SelectItem value="Code Review">Code Review</SelectItem>
+                <SelectItem value="Code Review">{t("codeReview")}</SelectItem>
               </SelectContent>
             </Select>
             {errors.typeOfWork && (
               <p className="text-red-500 text-sm mt-1">
-                Type of work is required
+                {t("typeOfWorkRequired")}
               </p>
             )}
           </div>
@@ -167,11 +169,12 @@ export default function TaskModal({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Description *
+              {t("description")} *
             </label>
             <Textarea
+              placeholder={t("descriptionPlaceholder")}
               {...register("description", {
-                required: "Description is required",
+                required: t("descriptionRequired"),
               })}
             />
             {errors.description && (
@@ -183,16 +186,18 @@ export default function TaskModal({
 
           {/* Hours */}
           <div>
-            <label className="block text-sm font-medium mb-1">Hours *</label>
+            <label className="block text-sm font-medium mb-1">
+              {t("hours")} *
+            </label>
             <Input
               type="number"
               min={1}
               max={40}
               {...register("hours", {
                 valueAsNumber: true,
-                required: "Hours are required",
-                min: { value: 1, message: "Minimum 1 hour" },
-                max: { value: 40, message: "Maximum 40 hours" },
+                required: t("hoursRequired"),
+                min: { value: 1, message: t("minHour") },
+                max: { value: 40, message: t("maxHour") },
               })}
             />
             {errors.hours && (
@@ -205,7 +210,7 @@ export default function TaskModal({
           {/* Assigned Date */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Assigned Date *
+              {t("assignedDate")} *
             </label>
             <Popover>
               <PopoverTrigger asChild>
@@ -217,7 +222,7 @@ export default function TaskModal({
                   {assignedDate ? (
                     format(assignedDate, "PPP")
                   ) : (
-                    <span>Pick a date</span>
+                    <span>{t("pickDate")}</span>
                   )}
                 </Button>
               </PopoverTrigger>
@@ -235,7 +240,7 @@ export default function TaskModal({
             </Popover>
             {errors.assignedDate && (
               <p className="text-red-500 text-sm mt-1">
-                Assigned date is required
+                {t("assignedDateRequired")}
               </p>
             )}
           </div>
@@ -247,14 +252,14 @@ export default function TaskModal({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !isValid}>
               {mutation.isPending
-                ? "Saving..."
+                ? t("saving")
                 : entry
-                ? "Update Task"
-                : "Add Task"}
+                ? t("updateTask")
+                : t("addTask")}
             </Button>
           </div>
         </form>
