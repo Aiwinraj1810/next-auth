@@ -4,8 +4,10 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Button } from "@/components/ui/button"
 
 import { logout } from "@/lib/actions/auth";
+import { useScopedI18n } from "../i18n";
 
 export default function UserMenu({ userName }: { userName: string }) {
+  const t = useScopedI18n("header")
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -18,7 +20,7 @@ export default function UserMenu({ userName }: { userName: string }) {
           onClick={() => logout()}
           className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
         >
-          Logout
+          {t("logout")}
         </button>
       </PopoverContent>
     </Popover>

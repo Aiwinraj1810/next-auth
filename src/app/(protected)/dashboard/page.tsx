@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { useLocale } from "@/app/context/LocaleContext";
+import { useScopedI18n } from "@/app/i18n"; // 👈 use scoped version
 
 async function fetchTimesheets({
   queryKey,
@@ -42,21 +43,16 @@ async function fetchTimesheets({
 
 export default function DashboardPage() {
   const { locale } = useLocale();
-  // Pagination
+  const t = useScopedI18n("dashboard");
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  // Default date range = current month
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
 
-  const {
-    data: response,
-    isLoading,
-    isFetching,
-  } = useQuery({
+  const { data: response, isLoading, isFetching } = useQuery({
     queryKey: ["timesheets", page, pageSize, dateRange, locale],
     queryFn: fetchTimesheets,
     placeholderData: (prev) => prev,
@@ -66,9 +62,7 @@ export default function DashboardPage() {
   const pagination = response?.pagination;
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [weekRange, setWeekRange] = useState<{ start?: string; end?: string }>(
-    {}
-  );
+  const [weekRange, setWeekRange] = useState<{ start?: string; end?: string }>({});
 
   function handleOpenCreate(weekStart: string) {
     const start = new Date(weekStart);
@@ -85,7 +79,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto space-y-6 px-4 sm:px-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-lg sm:text-xl font-semibold">Your Timesheets</h1>
+        <h1 className="text-lg sm:text-xl font-semibold">{t("title")}</h1>
         <AddEntryModal
           open={openCreateModal}
           setOpen={setOpenCreateModal}
@@ -97,13 +91,11 @@ export default function DashboardPage() {
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-500 text-sm">
-            Loading timesheets...
-          </span>
+          <span className="ml-2 text-gray-500 text-sm">{t("loading")}</span>
         </div>
       ) : (
         <DataTable
-          columns={getColumns(handleOpenCreate)}
+          columns={getColumns(handleOpenCreate,t)}
           data={data}
           page={page}
           pageSize={pageSize}

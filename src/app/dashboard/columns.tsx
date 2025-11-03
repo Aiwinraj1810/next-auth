@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { useScopedI18n } from "../i18n"; // 👈 your custom hook
 
 // ---- Extend ColumnMeta to allow filter configs ----
 declare module "@tanstack/react-table" {
@@ -23,24 +24,29 @@ export type Timesheet = {
 };
 
 // ⚡ Turn columns into a function
-export function getColumns(  handleOpenCreate: (weekStart: string) => void): ColumnDef<Timesheet>[] {
+export function getColumns(
+  handleOpenCreate: (weekStart: string) => void, t: ReturnType<typeof useScopedI18n>
+): ColumnDef<Timesheet>[] {
+
+
   return [
     {
       accessorKey: "week",
-      header: "Week #",
+      header: t("week"), // "Week #"
     },
     {
       accessorKey: "date",
-      header: "Date",
+      header: t("date"), // "Date"
       cell: ({ row }) => {
         const start = new Date(row.getValue("date"));
         const end = new Date(start);
-        end.setDate(start.getDate() + 6); // full week
+        end.setDate(start.getDate() + 6); // full week range
 
-        return `${start.toLocaleDateString("en-GB", {
+        // Use localized date format (will auto-switch for Arabic)
+        return `${start.toLocaleDateString(undefined, {
           day: "numeric",
           month: "short",
-        })} - ${end.toLocaleDateString("en-GB", {
+        })} - ${end.toLocaleDateString(undefined, {
           day: "numeric",
           month: "long",
         })}`;
@@ -55,20 +61,19 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
         const from = new Date(filterValue.from);
         const to = new Date(filterValue.to);
 
-        // ✅ Check week overlap
         return end >= from && start <= to;
       },
     },
     {
       accessorKey: "sheetStatus",
-      header: "Status",
+      header: t("status"), // "Status"
       meta: {
         filter: {
           type: "faceted",
           options: [
-            { label: "Completed", value: "COMPLETED" },
-            { label: "Incomplete", value: "INCOMPLETE" },
-            { label: "Missing", value: "MISSING" },
+            { label: t("completed"), value: "COMPLETED" },
+            { label: t("incomplete"), value: "INCOMPLETE" },
+            { label: t("missing"), value: "MISSING" },
           ],
         },
       },
@@ -82,34 +87,41 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
             ? "bg-yellow-100 text-yellow-700"
             : "bg-pink-100 text-pink-700";
 
+        const labelMap: Record<Timesheet["sheetStatus"], string> = {
+          COMPLETED: t("completed"),
+          INCOMPLETE: t("incomplete"),
+          MISSING: t("missing"),
+        };
+
         return (
           <Badge className={`${variant} rounded px-2 py-1 text-xs font-medium`}>
-            {status}
+            {labelMap[status]}
           </Badge>
         );
       },
     },
-        {
+    {
       id: "actions",
-      header: "Actions",
+      header: t("actions"), // "Actions"
       cell: ({ row }) => {
-        const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"]
-        const id = row.original.id
- 
+        const status = row.getValue("sheetStatus") as Timesheet["sheetStatus"];
+        const id = row.original.id;
 
-        let action = "View"
-        if (status === "INCOMPLETE") action = "Update"
-        if (status === "MISSING") action = "Create"
+        let actionKey = "view";
+        if (status === "INCOMPLETE") actionKey = "update";
+        if (status === "MISSING") actionKey = "create";
+
+        const actionLabel = t(actionKey);
 
         if (status === "MISSING") {
           return (
             <button
-              onClick={() => handleOpenCreate(row.original.date)} // ✅ pass start date
+              onClick={() => handleOpenCreate(row.original.date)}
               className="text-blue-600 hover:underline"
             >
-              {action}
+              {actionLabel}
             </button>
-          )
+          );
         }
 
         return (
@@ -117,9 +129,9 @@ export function getColumns(  handleOpenCreate: (weekStart: string) => void): Col
             href={`/week-info/${id}`}
             className="text-blue-600 hover:underline"
           >
-            {action}
+            {actionLabel}
           </Link>
-        )
+        );
       },
     },
   ];
