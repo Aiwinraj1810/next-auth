@@ -22,7 +22,7 @@ async function fetchTimesheetSummaries({
 }) {
   const [, page, pageSize, dateRange, locale, status] = queryKey;
 
-  // Format the date range to ISO strings (YYYY-MM-DD)
+  // ✅ Format date range to ISO strings (YYYY-MM-DD)
   const from = dateRange?.from
     ? formatISO(dateRange.from, { representation: "date" })
     : undefined;
@@ -30,19 +30,26 @@ async function fetchTimesheetSummaries({
     ? formatISO(dateRange.to, { representation: "date" })
     : undefined;
 
-  // Build query params for Strapi pagination & filtering
+  // ✅ Build query params in Strapi-friendly (nested) structure
   const params: Record<string, any> = {
-    "pagination[page]": page,
-    "pagination[pageSize]": pageSize,
+    page,
+    pageSize,
     sort: "weekStart:asc",
     locale,
+    filters: {}, 
+    status
   };
 
-  if (from) params["filters[weekStart][$gte]"] = from;
-  if (to) params["filters[weekEnd][$lte]"] = to;
-   if (status) params["filters[summaryStatus][$eq]"] = status;
+  // ✅ Apply filters in nested form so Strapi parses them correctly
+  if (from) params.filters.weekStart = { $gte: from };
+  if (to) params.filters.weekEnd = { $lte: to };
+  if (status) params.filters.summaryStatus = { $eq: status };
 
-  const res = await api.get("/timesheet-summaries", { params });
+  // 🟢 Optional: debug log for sanity check
+  console.log("🧾 Fetching timesheet summaries with params:", params);
+
+  // ✅ Fetch from Strapi (Axios automatically encodes nested filters)
+  const res = await api.get("/timesheet-summaries/complete", { params });
   const { data, meta } = res.data;
 
   return {
@@ -55,6 +62,7 @@ async function fetchTimesheetSummaries({
     },
   };
 }
+
 
 //
 // ✅ Dashboard Component
@@ -149,7 +157,10 @@ export default function DashboardPage() {
           setDateRange={setDateRange}
           isFetching={isFetching}
           totalPages={pagination.pageCount || 1}
-          onStatusFilterChange={setStatusFilter}
+          onStatusFilterChange={(status)=>{
+            setStatusFilter(status);
+            setPage(1)
+          }}
         />
       )}
     </div>

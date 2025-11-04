@@ -67,7 +67,6 @@ export function getColumns(
       accessorKey: "totalHours",
       header: t("hours"),
       cell: ({ row }) => {
-        console.log("row for hours : ", row.original)
         return(
         <span className="font-medium">{row.original.totalHours ?? 0}</span>
       )},
@@ -136,7 +135,6 @@ export function getColumns(
           );
         }
 
-        // 🟢 View/Update → navigates by weekStart (not ID)
         return (
           <Link
             href={`/week-info/${weekStart}`} // ✅ pass weekStart param
