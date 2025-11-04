@@ -60,6 +60,9 @@ export default {
     addNewTask: "إضافة مهمة جديدة",
     hrs: "ساعات",
     hoursProgress: "{total}/٤٠ ساعة",
+    Pending: "قيد الانتظار",
+    Submitted: "مُقَدَّم",
+    Approved: "مُعْتَمَد",
   },
   taskModal: {
     addTask: "إضافة مهمة",

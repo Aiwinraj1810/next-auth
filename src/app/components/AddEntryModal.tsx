@@ -28,6 +28,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useScopedI18n } from "../i18n";
+import { useLocale } from "../context/LocaleContext";
 
 type FormValues = {
   project: string;
@@ -54,10 +55,12 @@ export default function TaskModal({
 
   const queryClient = useQueryClient();
 
+  const { locale } = useLocale();
+
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects",locale],
     queryFn: async () => {
-      const res = await api.get("/projects");
+      const res = await api.get(`/projects?locale=${locale}`);
       return res.data.data || [];
     },
   });

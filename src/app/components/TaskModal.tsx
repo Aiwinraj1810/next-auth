@@ -28,9 +28,10 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useScopedI18n } from "../i18n";
+import { useLocale } from "../context/LocaleContext";
 
 type FormValues = {
-  project: string; 
+  project: string;
   task: string;
   hours: number;
   entryStatus: "Pending" | "Submitted" | "Approved";
@@ -38,7 +39,7 @@ type FormValues = {
 };
 
 export default function TaskModal({
-  weekId, 
+  weekId,
   defaultDate,
   entry,
   open,
@@ -53,11 +54,12 @@ export default function TaskModal({
   const t = useScopedI18n("taskModal");
 
   const queryClient = useQueryClient();
+  const { locale } = useLocale();
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects",locale],
     queryFn: async () => {
-      const res = await api.get("/projects");
+      const res = await api.get(`/projects?locale=${locale}`);
       return res.data.data || [];
     },
   });
@@ -112,7 +114,10 @@ export default function TaskModal({
 
       if (entry) {
         // Edit existing entry
-        const res = await api.put(`/timesheet-entries/${entry.documentId}`, payload);
+        const res = await api.put(
+          `/timesheet-entries/${entry.documentId}`,
+          payload
+        );
         return res.data;
       } else {
         // Create new entry
@@ -147,9 +152,7 @@ export default function TaskModal({
               {...register("task", { required: t("taskRequired") })}
             />
             {errors.task && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.task.message}
-              </p>
+              <p className="text-red-500 text-sm mt-1">{errors.task.message}</p>
             )}
           </div>
 

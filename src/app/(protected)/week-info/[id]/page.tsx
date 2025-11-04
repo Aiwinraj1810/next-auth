@@ -17,7 +17,7 @@ import TaskModal from "../../../components/TaskModal";
 import { useState } from "react";
 import DeleteConfirmationModal from "@/app/components/DeleteConfirmationModal";
 import { useScopedI18n } from "@/app/i18n";
-
+import { Badge } from "@/components/ui/badge";
 
 async function fetchWeekEntries(weekStart: string) {
   const res = await api.get(`/timesheet-entries`, {
@@ -127,55 +127,84 @@ export default function WeekInfoPage() {
               </div>
 
               {/* Tasks list */}
+
               <div className="flex-1 space-y-2">
-                {entriesForDay.map((entry: any) => (
-                  <div
-                    key={entry.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between border rounded px-3 py-2 gap-2"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{entry.typeOfWork}</p>
-                      <p className="text-xs text-gray-500">
-                        {entry.task || t("noDescription")}
-                      </p>
+                {entriesForDay.map((entry: any) => {
+                  const entryStatus =
+                    entry.entryStatus.charAt(0).toUpperCase() +
+                    entry.entryStatus.slice(1);
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between border rounded px-3 py-2 gap-2"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <p className="text-sm font-medium">
+                          {entry.typeOfWork}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {entry.task || t("noDescription")}
+                        </p>
+
+                        {/* Status Badge */}
+                        <Badge
+                          variant={
+                            entry.entryStatus === "approved"
+                              ? "secondary"
+                              : entry.entryStatus === "submitted"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className={
+                            entry.entryStatus === "Approved"
+                              ? "bg-green-100 text-green-700 border-green-300"
+                              : entry.entryStatus === "Submitted"
+                              ? "bg-yellow-100 text-yellow-700 border-yellow-300"
+                              : "bg-red-100 text-red-500 border-red-100"
+                          }
+                        >
+                          {t(entryStatus)}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3">
+                        <span className="text-sm">
+                          {entry.hours || 0} {t("hrs")}
+                        </span>
+                        <span className="text-xs text-blue-600 hidden sm:inline">
+                          {entry.project?.name || t("noProject")}
+                        </span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingEntry(entry);
+                                setSelectedDate(entry.date);
+                                setOpen(true);
+                              }}
+                            >
+                              {t("edit")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => {
+                                setDeletingEntryId(entry.documentId.toString());
+                                setDeleteOpen(true);
+                              }}
+                            >
+                              {t("delete")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-3">
-                      <span className="text-sm">
-                        {entry.hours || 0} {t("hrs")}
-                      </span>
-                      <span className="text-xs text-blue-600 hidden sm:inline">
-                        {entry.project?.name || t("noProject")}
-                      </span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingEntry(entry);
-                              setSelectedDate(entry.date);
-                              setOpen(true);
-                            }}
-                          >
-                            {t("edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => {
-                              setDeletingEntryId(entry.documentId.toString());
-                              setDeleteOpen(true);
-                            }}
-                          >
-                            {t("delete")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Add new task */}
                 <Button

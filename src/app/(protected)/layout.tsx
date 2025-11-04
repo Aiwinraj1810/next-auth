@@ -21,7 +21,7 @@ export default async function ProtectedLayout({
           </main>
           <footer className="border-t bg-gray-50">
             <div className="container mx-auto text-center py-4 text-sm text-gray-500">
-              © 2024 tentwenty. All rights reserved.
+              © 2025 tentwenty. All rights reserved.
             </div>
           </footer>
         </div>
