@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import api from "@/lib/axios";
+import { useEffect } from "react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import {
   Select,
   SelectTrigger,
@@ -18,38 +27,41 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import api from "@/lib/axios";
-import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { useScopedI18n } from "../i18n";
 
 type FormValues = {
   project: string;
-  typeOfWork: string;
-  description: string;
+  task: string;
   hours: number;
-  assignedDate: string;
+  entryStatus: "Pending" | "Submitted" | "Approved";
+  assignedDate: Date;
 };
 
-type Props = {
-  open?: boolean;
-  setOpen?: (val: boolean) => void;
-  weekStart?: string;
-  weekEnd?: string;
-};
+export default function TaskModal({
+  weekId, 
+  defaultDate,
+  entry,
+  open,
+  setOpen,
+}: {
+  weekId: string;
+  defaultDate?: string;
+  entry?: any;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
+  const t = useScopedI18n("taskModal");
 
-export default function AddEntryModal({
-  open: controlledOpen,
-  setOpen: setControlledOpen,
-  weekStart,
-  weekEnd,
-}: Props) {
+  const queryClient = useQueryClient();
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const res = await api.get("/projects");
+      return res.data.data || [];
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -59,154 +71,130 @@ export default function AddEntryModal({
     formState: { errors, isValid },
   } = useForm<FormValues>({
     mode: "onChange",
-    defaultValues: { assignedDate: "" },
+    defaultValues: { assignedDate: undefined },
   });
 
-  const queryClient = useQueryClient();
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const assignedDate = watch("assignedDate");
+  const entryStatus = watch("entryStatus");
+  const project = watch("project");
 
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : uncontrolledOpen;
-  const setOpen = isControlled ? setControlledOpen! : setUncontrolledOpen;
+  useEffect(() => {
+    if (open) {
+      if (entry) {
+        setValue("project", entry.project?.id?.toString());
+        setValue("task", entry.task);
+        setValue("hours", entry.hours);
+        setValue("entryStatus", entry.entryStatus || "Pending");
+        setValue("assignedDate", new Date(entry.date));
+      } else {
+        reset();
+        setValue("entryStatus", "Pending");
+        if (defaultDate) {
+          setValue("assignedDate", new Date(defaultDate));
+        }
+      }
+    }
+  }, [open, entry, defaultDate, setValue, reset]);
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      const res = await api.post("/timesheets", {
+      const payload = {
         data: {
-          userId: "user123",
-          ...data,
+          task: data.task,
+          hours: data.hours,
+          entryStatus: data.entryStatus,
+          date: format(data.assignedDate, "yyyy-MM-dd"),
+          weekStart: weekId,
+          project: data.project ? Number(data.project) : null,
         },
-      });
-      return res.data;
+      };
+
+      if (entry) {
+        const res = await api.put(`/timesheet-entries/${entry.documentId}`, payload);
+        return res.data;
+      } else {
+        const res = await api.post(`/timesheet-entries`, payload);
+        return res.data;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["timesheets"] });
+      queryClient.invalidateQueries({ queryKey: ["weekEntries", weekId] });
       setOpen(false);
       reset();
     },
-    onError:(error)=>[
-      console.log("Post error : ", error)
-    ]
   });
 
-  const onSubmit = (data: FormValues) => {
-    mutation.mutate(data);
-  };
+  const onSubmit = (data: FormValues) => mutation.mutate(data);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add New Entry</DialogTitle>
+          <DialogTitle>{entry ? t("editTask") : t("addTask")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Project */}
+          {/* Task Name */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Select Project *
+              {t("task")} *
             </label>
             <Input
-              placeholder="Project name"
-              {...register("project", { required: "Project is required" })}
+              placeholder={t("taskPlaceholder")}
+              {...register("task", { required: t("taskRequired") })}
             />
-            {errors.project && (
+            {errors.task && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.project.message}
+                {errors.task.message}
               </p>
             )}
           </div>
 
-          {/* Type of Work */}
+          {/* Project Dropdown */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Type of Work *
+              {t("project")} *
             </label>
             <Select
               onValueChange={(val) =>
-                setValue("typeOfWork", val, { shouldValidate: true })
+                setValue("project", val, { shouldValidate: true })
               }
+              value={project || ""}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Choose work type" />
+                <SelectValue placeholder={t("chooseProject")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Bug Fixes">Bug Fixes</SelectItem>
-                <SelectItem value="Feature Development">
-                  Feature Development
-                </SelectItem>
-                <SelectItem value="Code Review">Code Review</SelectItem>
+                {projects.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    {p.name || `Project ${p.id}`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            {errors.typeOfWork && (
+            {errors.project && (
               <p className="text-red-500 text-sm mt-1">
-                Type of work is required
+                {t("projectRequired")}
               </p>
             )}
           </div>
 
-          {/* Task Description */}
+          {/* Hours */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Task description *
+              {t("hours")} *
             </label>
-            <Textarea
-              placeholder="Write text here..."
-              {...register("description", {
-                required: "Description is required",
+            <Input
+              type="number"
+              min={1}
+              max={40}
+              {...register("hours", {
+                valueAsNumber: true,
+                required: t("hoursRequired"),
+                min: { value: 1, message: t("minHour") },
+                max: { value: 40, message: t("maxHour") },
               })}
             />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          {/* Hours */}
-          {/* Hours */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Hours *</label>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const current = watch("hours") || 0;
-                  if (current > 1)
-                    setValue("hours", current - 1, { shouldValidate: true });
-                }}
-              >
-                -
-              </Button>
-
-              <Input
-                type="number"
-                readOnly
-                value={watch("hours") || 0}
-                className="w-16 text-center"
-                {...register("hours", {
-                  valueAsNumber: true,
-                  required: "Hours are required",
-                  min: { value: 1, message: "Minimum 1 hour" },
-                  max: { value: 40, message: "Maximum 40 hours" },
-                })}
-              />
-
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  const current = watch("hours") || 0;
-                  if (current < 40)
-                    setValue("hours", current + 1, { shouldValidate: true });
-                }}
-              >
-                +
-              </Button>
-            </div>
             {errors.hours && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.hours.message}
@@ -214,10 +202,32 @@ export default function AddEntryModal({
             )}
           </div>
 
-          {/* Assigned Date */}
+          {/* Entry Status */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Assigned Date *
+              {t("entryStatus")} *
+            </label>
+            <Select
+              onValueChange={(val) =>
+                setValue("entryStatus", val as any, { shouldValidate: true })
+              }
+              value={entryStatus || "Pending"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("chooseStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pending">{t("pending")}</SelectItem>
+                <SelectItem value="Submitted">{t("submitted")}</SelectItem>
+                <SelectItem value="Approved">{t("approved")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {t("date")} *
             </label>
             <Popover>
               <PopoverTrigger asChild>
@@ -226,33 +236,20 @@ export default function AddEntryModal({
                   className="w-full justify-start text-left font-normal"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("assignedDate") ? (
-                    format(new Date(watch("assignedDate")), "PPP")
+                  {assignedDate ? (
+                    format(assignedDate, "PPP")
                   ) : (
-                    <span>Pick a date</span>
+                    <span>{t("pickDate")}</span>
                   )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={
-                    watch("assignedDate")
-                      ? new Date(watch("assignedDate"))
-                      : undefined
-                  }
-                  onSelect={(date) => {
-                    if (date) {
-                      setValue("assignedDate", format(date, "yyyy-MM-dd"), {
-                        shouldValidate: true,
-                      });
-                    }
-                  }}
-                  disabled={
-                    [
-                      weekStart ? { before: new Date(weekStart) } : undefined,
-                      weekEnd ? { after: new Date(weekEnd) } : undefined,
-                    ].filter(Boolean) as any
+                  selected={assignedDate}
+                  onSelect={(date) =>
+                    date &&
+                    setValue("assignedDate", date, { shouldValidate: true })
                   }
                   initialFocus
                 />
@@ -260,7 +257,7 @@ export default function AddEntryModal({
             </Popover>
             {errors.assignedDate && (
               <p className="text-red-500 text-sm mt-1">
-                Assigned date is required
+                {t("assignedDateRequired")}
               </p>
             )}
           </div>
@@ -272,10 +269,14 @@ export default function AddEntryModal({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !isValid}>
-              {mutation.isPending ? "Saving..." : "Add Entry"}
+              {mutation.isPending
+                ? t("saving")
+                : entry
+                ? t("updateTask")
+                : t("addTask")}
             </Button>
           </div>
         </form>

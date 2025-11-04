@@ -30,7 +30,7 @@ import {
 import { useScopedI18n } from "../i18n";
 
 type FormValues = {
-  project: string; // project ID
+  project: string; 
   task: string;
   hours: number;
   entryStatus: "Pending" | "Submitted" | "Approved";
@@ -38,7 +38,7 @@ type FormValues = {
 };
 
 export default function TaskModal({
-  weekId, // weekStart passed from parent
+  weekId, 
   defaultDate,
   entry,
   open,
@@ -54,7 +54,6 @@ export default function TaskModal({
 
   const queryClient = useQueryClient();
 
-  // 🧠 Fetch projects for dropdown
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
@@ -79,7 +78,6 @@ export default function TaskModal({
   const entryStatus = watch("entryStatus");
   const project = watch("project");
 
-  // 🧠 Populate form when modal opens
   useEffect(() => {
     if (open) {
       if (entry) {

@@ -19,7 +19,6 @@ import DeleteConfirmationModal from "@/app/components/DeleteConfirmationModal";
 import { useScopedI18n } from "@/app/i18n";
 
 
-// ✅ Fetch entries based on weekStart/weekEnd
 async function fetchWeekEntries(weekStart: string) {
   const res = await api.get(`/timesheet-entries`, {
     params: {
@@ -33,14 +32,11 @@ async function fetchWeekEntries(weekStart: string) {
   return res.data?.data || [];
 }
 
-
 export default function WeekInfoPage() {
   const t = useScopedI18n("weekInfo");
   const params = useParams();
   const weekStartParam = params.id as string;
- 
 
-  // Derive weekEnd (Sunday if Monday is weekStart)
   const weekStart = parseISO(weekStartParam);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
@@ -54,7 +50,6 @@ export default function WeekInfoPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
 
-  // ✅ Fetch all entries directly
   const {
     data: entries = [],
     isLoading,
@@ -73,8 +68,10 @@ export default function WeekInfoPage() {
     );
   }
 
-  // ✅ Total hours computed client-side
-  const totalHours = entries.reduce((sum : number, e : any) => sum + (e.hours || 0), 0);
+  const totalHours = entries.reduce(
+    (sum: number, e: any) => sum + (e.hours || 0),
+    0
+  );
   const days = validWeekRange
     ? eachDayOfInterval({ start: weekStart, end: weekEnd })
     : [];
@@ -114,7 +111,7 @@ export default function WeekInfoPage() {
         {days.map((day) => {
           const dayStr = format(day, "yyyy-MM-dd");
           const entriesForDay = entries.filter(
-            (entry :any) =>
+            (entry: any) =>
               entry.date &&
               format(parseISO(entry.date), "yyyy-MM-dd") === dayStr
           );
@@ -131,7 +128,7 @@ export default function WeekInfoPage() {
 
               {/* Tasks list */}
               <div className="flex-1 space-y-2">
-                {entriesForDay.map((entry : any) => (
+                {entriesForDay.map((entry: any) => (
                   <div
                     key={entry.id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between border rounded px-3 py-2 gap-2"
@@ -168,7 +165,7 @@ export default function WeekInfoPage() {
                           <DropdownMenuItem
                             className="text-red-600"
                             onClick={() => {
-                              setDeletingEntryId(entry.id.toString());
+                              setDeletingEntryId(entry.documentId.toString());
                               setDeleteOpen(true);
                             }}
                           >
@@ -201,14 +198,11 @@ export default function WeekInfoPage() {
       {/* Task Modal */}
       {selectedDate && (
         <TaskModal
-          weekStart={weekStartParam}
-          weekEnd={formattedWeekEnd}
           weekId={weekStartParam}
           defaultDate={selectedDate}
           entry={editingEntry}
           open={open}
           setOpen={setOpen}
-          onRefetch={refetchEntries}
         />
       )}
 
@@ -217,9 +211,7 @@ export default function WeekInfoPage() {
         open={deleteOpen}
         setOpen={setDeleteOpen}
         entryId={deletingEntryId}
-        weekStart={weekStartParam}
-        weekEnd={formattedWeekEnd}
-        onRefetch={refetchEntries}
+        weekId={weekStartParam}
       />
     </div>
   );

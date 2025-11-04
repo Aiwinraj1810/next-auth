@@ -12,13 +12,19 @@ import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { useLocale } from "@/app/context/LocaleContext";
 import { useScopedI18n } from "@/app/i18n";
 
-
 // Fetch timesheet summaries directly from Strapi
 
 async function fetchTimesheetSummaries({
   queryKey,
 }: {
-  queryKey: [string, number, number, DateRange | undefined, string, string | undefined];
+  queryKey: [
+    string,
+    number,
+    number,
+    DateRange | undefined,
+    string,
+    string | undefined
+  ];
 }) {
   const [, page, pageSize, dateRange, locale, status] = queryKey;
 
@@ -36,8 +42,8 @@ async function fetchTimesheetSummaries({
     pageSize,
     sort: "weekStart:asc",
     locale,
-    filters: {}, 
-    status
+    filters: {},
+    status,
   };
 
   // ✅ Apply filters in nested form so Strapi parses them correctly
@@ -63,7 +69,6 @@ async function fetchTimesheetSummaries({
   };
 }
 
-
 //
 // ✅ Dashboard Component
 //
@@ -74,7 +79,9 @@ export default function DashboardPage() {
   // Pagination + filters
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-    const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    undefined
+  );
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
@@ -88,7 +95,14 @@ export default function DashboardPage() {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["timesheet-summaries", page, pageSize, dateRange, locale,statusFilter],
+    queryKey: [
+      "timesheet-summaries",
+      page,
+      pageSize,
+      dateRange,
+      locale,
+      statusFilter,
+    ],
     queryFn: fetchTimesheetSummaries,
     placeholderData: (prev) => prev,
   });
@@ -125,9 +139,6 @@ export default function DashboardPage() {
     sheetStatus: item.summaryStatus,
   }));
 
-  //
-  // ✅ Render
-  //
   return (
     <div className="container mx-auto space-y-6 px-4 sm:px-6">
       <div className="flex justify-between items-center">
@@ -135,8 +146,7 @@ export default function DashboardPage() {
         <AddEntryModal
           open={openCreateModal}
           setOpen={setOpenCreateModal}
-          weekStart={weekRange.start}
-          weekEnd={weekRange.end}
+          weekId={`${weekRange.start}`}
         />
       </div>
 
@@ -157,9 +167,9 @@ export default function DashboardPage() {
           setDateRange={setDateRange}
           isFetching={isFetching}
           totalPages={pagination.pageCount || 1}
-          onStatusFilterChange={(status)=>{
+          onStatusFilterChange={(status) => {
             setStatusFilter(status);
-            setPage(1)
+            setPage(1);
           }}
         />
       )}

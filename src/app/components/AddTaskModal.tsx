@@ -52,7 +52,6 @@ export default function AddTaskModal({
     useForm<FormValues>();
   const queryClient = useQueryClient();
 
-  // Watch current assignedDate
   const assignedDate = watch("assignedDate");
 
   useEffect(() => {

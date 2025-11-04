@@ -23,7 +23,7 @@ export default function DeleteConfirmationModal({
   entryId: string | null;
   weekId: string;
 }) {
-  const t = useScopedI18n("deleteModal"); // 👈 scoped translation
+  const t = useScopedI18n("deleteModal"); 
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -32,7 +32,7 @@ export default function DeleteConfirmationModal({
       await api.delete(`/timesheet-entries/${entryId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["weekEntries", weekId] });
+      queryClient.invalidateQueries({ queryKey: ["weekEntries", weekId], exact:false });
       setOpen(false);
     },
   });
