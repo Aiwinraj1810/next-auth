@@ -17,6 +17,7 @@ export default {
     previous: "Previous",
     next: "Next",
     all: "All",
+    hours : "Hours"
   },
 
   header: {
@@ -85,6 +86,16 @@ taskModal: {
   cancel: "Cancel",
   saving: "Saving...",
   updateTask: "Update Task",
+  task : "Task",
+  taskPlaceholder : "Task Description",
+  taskRequired : "Task is Required",
+  chooseProject : "Select Project",
+  entryStatus : "Task Status",
+  chooseStatus : "Choose Status",
+  pending : "Pending",
+  submitted : "Submitted",
+  approved : "Approved",
+  date : "Date"
 },
 deleteModal: {
   title: "Delete Task",

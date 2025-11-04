@@ -18,24 +18,13 @@ import { useState } from "react";
 import DeleteConfirmationModal from "@/app/components/DeleteConfirmationModal";
 import { useScopedI18n } from "@/app/i18n";
 
-type TimesheetEntry = {
-  id: number;
-  project?: { name: string } | null;
-  typeOfWork: string;
-  description: string;
-  hours: number;
-  date: string;
-  weekStart: string;
-  weekEnd: string;
-};
 
 // ✅ Fetch entries based on weekStart/weekEnd
-async function fetchWeekEntries(weekStart: string, weekEnd: string) {
+async function fetchWeekEntries(weekStart: string) {
   const res = await api.get(`/timesheet-entries`, {
     params: {
       filters: {
         weekStart: { $eq: weekStart },
-        weekEnd: { $eq: weekEnd },
       },
       populate: "*",
       sort: ["date:asc"],
@@ -43,6 +32,7 @@ async function fetchWeekEntries(weekStart: string, weekEnd: string) {
   });
   return res.data?.data || [];
 }
+
 
 export default function WeekInfoPage() {
   const t = useScopedI18n("weekInfo");
@@ -71,7 +61,7 @@ export default function WeekInfoPage() {
     refetch: refetchEntries,
   } = useQuery({
     queryKey: ["weekEntries", weekStartParam],
-    queryFn: () => fetchWeekEntries(weekStartParam, formattedWeekEnd),
+    queryFn: () => fetchWeekEntries(weekStartParam),
     enabled: !!weekStartParam,
   });
 
@@ -84,7 +74,7 @@ export default function WeekInfoPage() {
   }
 
   // ✅ Total hours computed client-side
-  const totalHours = entries.reduce((sum, e) => sum + (e.hours || 0), 0);
+  const totalHours = entries.reduce((sum : number, e : any) => sum + (e.hours || 0), 0);
   const days = validWeekRange
     ? eachDayOfInterval({ start: weekStart, end: weekEnd })
     : [];
@@ -124,7 +114,7 @@ export default function WeekInfoPage() {
         {days.map((day) => {
           const dayStr = format(day, "yyyy-MM-dd");
           const entriesForDay = entries.filter(
-            (entry) =>
+            (entry :any) =>
               entry.date &&
               format(parseISO(entry.date), "yyyy-MM-dd") === dayStr
           );
@@ -141,7 +131,7 @@ export default function WeekInfoPage() {
 
               {/* Tasks list */}
               <div className="flex-1 space-y-2">
-                {entriesForDay.map((entry) => (
+                {entriesForDay.map((entry : any) => (
                   <div
                     key={entry.id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between border rounded px-3 py-2 gap-2"
@@ -149,7 +139,7 @@ export default function WeekInfoPage() {
                     <div className="flex-1">
                       <p className="text-sm font-medium">{entry.typeOfWork}</p>
                       <p className="text-xs text-gray-500">
-                        {entry.description || t("noDescription")}
+                        {entry.task || t("noDescription")}
                       </p>
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-3">
@@ -213,6 +203,7 @@ export default function WeekInfoPage() {
         <TaskModal
           weekStart={weekStartParam}
           weekEnd={formattedWeekEnd}
+          weekId={weekStartParam}
           defaultDate={selectedDate}
           entry={editingEntry}
           open={open}

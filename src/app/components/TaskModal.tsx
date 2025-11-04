@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -10,14 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import api from "@/lib/axios";
 import { useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
@@ -28,18 +20,25 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { useScopedI18n } from "../i18n"; // 👈 import your scoped hook
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { useScopedI18n } from "../i18n";
 
 type FormValues = {
-  project: string;
-  typeOfWork: string;
-  description: string;
+  project: string; // project ID
+  task: string;
   hours: number;
+  entryStatus: "Pending" | "Submitted" | "Approved";
   assignedDate: Date;
 };
 
 export default function TaskModal({
-  weekId,
+  weekId, // weekStart passed from parent
   defaultDate,
   entry,
   open,
@@ -51,7 +50,18 @@ export default function TaskModal({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) {
-  const t = useScopedI18n("taskModal"); // 👈 translations under "taskModal"
+  const t = useScopedI18n("taskModal");
+
+  const queryClient = useQueryClient();
+
+  // 🧠 Fetch projects for dropdown
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const res = await api.get("/projects");
+      return res.data.data || [];
+    },
+  });
 
   const {
     register,
@@ -65,19 +75,22 @@ export default function TaskModal({
     defaultValues: { assignedDate: undefined },
   });
 
-  const queryClient = useQueryClient();
   const assignedDate = watch("assignedDate");
+  const entryStatus = watch("entryStatus");
+  const project = watch("project");
 
+  // 🧠 Populate form when modal opens
   useEffect(() => {
     if (open) {
       if (entry) {
-        setValue("project", entry.project);
-        setValue("typeOfWork", entry.typeOfWork);
-        setValue("description", entry.description);
+        setValue("project", entry.project?.id?.toString());
+        setValue("task", entry.task);
         setValue("hours", entry.hours);
-        setValue("assignedDate", new Date(entry.assignedDate));
+        setValue("entryStatus", entry.entryStatus || "Pending");
+        setValue("assignedDate", new Date(entry.date));
       } else {
         reset();
+        setValue("entryStatus", "Pending");
         if (defaultDate) {
           setValue("assignedDate", new Date(defaultDate));
         }
@@ -85,22 +98,27 @@ export default function TaskModal({
     }
   }, [open, entry, defaultDate, setValue, reset]);
 
+  // 🧠 Mutation logic
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
+      const payload = {
+        data: {
+          task: data.task,
+          hours: data.hours,
+          entryStatus: data.entryStatus,
+          date: format(data.assignedDate, "yyyy-MM-dd"),
+          weekStart: weekId,
+          project: data.project ? Number(data.project) : null,
+        },
+      };
+
       if (entry) {
-        // Edit mode
-        const res = await api.put(`/timesheet-entries/${entry.documentId}`, {
-          data: { ...data, timesheet: entry.timesheet?.id },
-        });
+        // Edit existing entry
+        const res = await api.put(`/timesheet-entries/${entry.documentId}`, payload);
         return res.data;
       } else {
-        // Add mode
-        const res = await api.post("/timesheets", {
-          data: {
-            userId: "user123",
-            ...data,
-          },
-        });
+        // Create new entry
+        const res = await api.post(`/timesheet-entries`, payload);
         return res.data;
       }
     },
@@ -121,65 +139,47 @@ export default function TaskModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Project */}
+          {/* Task Name */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {t("task")} *
+            </label>
+            <Input
+              placeholder={t("taskPlaceholder")}
+              {...register("task", { required: t("taskRequired") })}
+            />
+            {errors.task && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.task.message}
+              </p>
+            )}
+          </div>
+
+          {/* Project Dropdown */}
           <div>
             <label className="block text-sm font-medium mb-1">
               {t("project")} *
             </label>
-            <Input
-              placeholder={t("projectPlaceholder")}
-              {...register("project", { required: t("projectRequired") })}
-            />
-            {errors.project && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.project.message}
-              </p>
-            )}
-          </div>
-
-          {/* Type of Work */}
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t("typeOfWork")} *
-            </label>
             <Select
               onValueChange={(val) =>
-                setValue("typeOfWork", val, { shouldValidate: true })
+                setValue("project", val, { shouldValidate: true })
               }
-              value={watch("typeOfWork") || ""}
+              value={project || ""}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t("chooseWorkType")} />
+                <SelectValue placeholder={t("chooseProject")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Bug Fixes">{t("bugFixes")}</SelectItem>
-                <SelectItem value="Feature Development">
-                  {t("featureDevelopment")}
-                </SelectItem>
-                <SelectItem value="Code Review">{t("codeReview")}</SelectItem>
+                {projects.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    {p.name || `Project ${p.id}`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            {errors.typeOfWork && (
+            {errors.project && (
               <p className="text-red-500 text-sm mt-1">
-                {t("typeOfWorkRequired")}
-              </p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              {t("description")} *
-            </label>
-            <Textarea
-              placeholder={t("descriptionPlaceholder")}
-              {...register("description", {
-                required: t("descriptionRequired"),
-              })}
-            />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.description.message}
+                {t("projectRequired")}
               </p>
             )}
           </div>
@@ -207,10 +207,32 @@ export default function TaskModal({
             )}
           </div>
 
-          {/* Assigned Date */}
+          {/* Entry Status */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              {t("assignedDate")} *
+              {t("entryStatus")} *
+            </label>
+            <Select
+              onValueChange={(val) =>
+                setValue("entryStatus", val as any, { shouldValidate: true })
+              }
+              value={entryStatus || "Pending"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t("chooseStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pending">{t("pending")}</SelectItem>
+                <SelectItem value="Submitted">{t("submitted")}</SelectItem>
+                <SelectItem value="Approved">{t("approved")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              {t("date")} *
             </label>
             <Popover>
               <PopoverTrigger asChild>
