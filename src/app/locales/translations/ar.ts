@@ -17,6 +17,7 @@ export default {
     previous: "السابق",
     next: "التالي",
     all: "All",
+    hours: "الساعات",
   },
 
   header: {
@@ -85,6 +86,16 @@ export default {
     cancel: "إلغاء",
     saving: "جارٍ الحفظ...",
     updateTask: "تحديث المهمة",
+    task: "المهمة",
+    taskPlaceholder: "وصف المهمة",
+    taskRequired: "المهمة مطلوبة",
+    chooseProject: "اختر المشروع",
+    entryStatus: "حالة المهمة",
+    chooseStatus: "اختر الحالة",
+    pending: "قيد الانتظار",
+    submitted: "تم الإرسال",
+    approved: "تمت الموافقة",
+    date: "التاريخ",
   },
   deleteModal: {
     title: "حذف المهمة",

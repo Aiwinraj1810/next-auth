@@ -12,15 +12,15 @@ import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { useLocale } from "@/app/context/LocaleContext";
 import { useScopedI18n } from "@/app/i18n";
 
-//
-// ✅ Fetch timesheet summaries directly from Strapi
-//
+
+// Fetch timesheet summaries directly from Strapi
+
 async function fetchTimesheetSummaries({
   queryKey,
 }: {
-  queryKey: [string, number, number, DateRange | undefined, string];
+  queryKey: [string, number, number, DateRange | undefined, string, string | undefined];
 }) {
-  const [, page, pageSize, dateRange, locale] = queryKey;
+  const [, page, pageSize, dateRange, locale, status] = queryKey;
 
   // Format the date range to ISO strings (YYYY-MM-DD)
   const from = dateRange?.from
@@ -34,12 +34,13 @@ async function fetchTimesheetSummaries({
   const params: Record<string, any> = {
     "pagination[page]": page,
     "pagination[pageSize]": pageSize,
-    sort: "weekStart:desc",
+    sort: "weekStart:asc",
     locale,
   };
 
   if (from) params["filters[weekStart][$gte]"] = from;
   if (to) params["filters[weekEnd][$lte]"] = to;
+   if (status) params["filters[summaryStatus][$eq]"] = status;
 
   const res = await api.get("/timesheet-summaries", { params });
   const { data, meta } = res.data;
@@ -65,6 +66,7 @@ export default function DashboardPage() {
   // Pagination + filters
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+    const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
@@ -78,7 +80,7 @@ export default function DashboardPage() {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["timesheet-summaries", page, pageSize, dateRange, locale],
+    queryKey: ["timesheet-summaries", page, pageSize, dateRange, locale,statusFilter],
     queryFn: fetchTimesheetSummaries,
     placeholderData: (prev) => prev,
   });
@@ -147,6 +149,7 @@ export default function DashboardPage() {
           setDateRange={setDateRange}
           isFetching={isFetching}
           totalPages={pagination.pageCount || 1}
+          onStatusFilterChange={setStatusFilter}
         />
       )}
     </div>

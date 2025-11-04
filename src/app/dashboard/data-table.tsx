@@ -140,9 +140,7 @@ export function DataTable<TData, TValue>({
                 variant="outline"
                 className="flex items-center gap-2 w-full sm:w-auto"
               >
-                {currentStatus
-                  ? t(currentStatus)
-                  : t("status")}
+                {currentStatus ? t(currentStatus) : t("status")}
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
