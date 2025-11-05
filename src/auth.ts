@@ -1,64 +1,89 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-const dummyUsers = [
-  {
-    id: "1",
-    name: "Demo User",
-    email: "username@example.com",
-    // store plain text here only for demo/interview. Never in prod.
-    password: "password123",
-  },
-  // Add more dummy users if you want
-];
+/**
+ * ✅ NextAuth configuration using:
+ *  - GitHub OAuth login
+ *  - Strapi local credentials authentication
+ */
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [
+    // 🔹 GitHub OAuth Provider
     GitHubProvider({
       clientId: process.env.AUTH_GITHUB_ID!,
       clientSecret: process.env.AUTH_GITHUB_SECRET!,
     }),
 
+    // 🔹 Strapi Credentials Provider
     CredentialsProvider({
       id: "credentials",
-      name: "Credentials",
-      // The credentials object is used to generate a simple form in some adapters,
-      // but you can build your own form on the client.
+      name: "Strapi Credentials",
       credentials: {
-        email: { label: "Email", type: "text", placeholder: "username@example.com" },
+        email: { label: "Email", type: "text", placeholder: "user@example.com" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
-        if (!credentials) return null;
-
-        const user = dummyUsers.find(
-          (u) => u.email === credentials.email && u.password === credentials.password
-        );
-
-        if (user) {
-          // return a user object - will be set on session
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          };
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email and password required");
         }
 
-        // If you return null or false, authentication failed
-        return null;
+        try {
+          // Call Strapi’s local auth endpoint
+          const res = await fetch(`${process.env.STRAPI_URL}/api/auth/local`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              identifier: credentials.email,
+              password: credentials.password,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error?.message || "Invalid credentials");
+          }
+
+          // Strapi returns: { jwt, user: {...} }
+          const { jwt, user } = data;
+
+          return {
+            id: user.id,
+            name: user.username,
+            email: user.email,
+            jwt, // keep the JWT to reuse in API calls
+          };
+        } catch (err) {
+          throw new Error("Unable to connect to authentication server");
+        }
       },
     }),
   ],
 
-  // optional: callbacks to shape the session jwt, etc.
+  // 🔹 Callbacks to inject JWT into session
   callbacks: {
+    async jwt({ token, user }) {
+      // Attach JWT when user logs in
+      if (user?.jwt) {
+        token.jwt = user.jwt;
+        token.id = user.id;
+      }
+      return token;
+    },
+
     async session({ session, token }) {
-      // session.user.id = token.sub; // example
+      // Make Strapi JWT available in session
+      if (token?.jwt) {
+        session.jwt = token.jwt;
+        session.user.id = token.id;
+      }
       return session;
     },
   },
 
-  // other NextAuth options...
+
+
+  secret: process.env.NEXTAUTH_SECRET,
 });

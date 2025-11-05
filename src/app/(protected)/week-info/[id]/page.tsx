@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import api from "@/lib/axios";
+import { getApi } from "@/lib/axios";
 import { format, parseISO, eachDayOfInterval, isValid } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Loader2, MoreHorizontal } from "lucide-react";
@@ -18,8 +18,10 @@ import { useState } from "react";
 import DeleteConfirmationModal from "@/app/components/DeleteConfirmationModal";
 import { useScopedI18n } from "@/app/i18n";
 import { Badge } from "@/components/ui/badge";
+import { useSession } from "next-auth/react";
 
-async function fetchWeekEntries(weekStart: string) {
+async function fetchWeekEntries(weekStart: string, jwt : string | undefined) {
+    const api = getApi(jwt);
   const res = await api.get(`/timesheet-entries`, {
     params: {
       filters: {
@@ -33,6 +35,8 @@ async function fetchWeekEntries(weekStart: string) {
 }
 
 export default function WeekInfoPage() {
+  const {data : session} = useSession()
+  console.log("session from info : ", session)
   const t = useScopedI18n("weekInfo");
   const params = useParams();
   const weekStartParam = params.id as string;
@@ -55,9 +59,9 @@ export default function WeekInfoPage() {
     isLoading,
     refetch: refetchEntries,
   } = useQuery({
-    queryKey: ["weekEntries", weekStartParam],
-    queryFn: () => fetchWeekEntries(weekStartParam),
-    enabled: !!weekStartParam,
+    queryKey: ["weekEntries", weekStartParam, session?.jwt],
+    queryFn: () => fetchWeekEntries(weekStartParam, session?.jwt),
+    enabled: !!weekStartParam && !!session?.jwt,
   });
 
   if (isLoading) {

@@ -3,9 +3,12 @@ import { auth } from "@/auth"
 import SignInForm from "./components/sign-in-form"
 import { SignOutButton } from "./components/sign-out-button"
 import { redirect } from "next/navigation"
+import { getApi } from "@/lib/axios"
 
 export default async function Page() {
   const session = await auth()
+  console.log("Session from NextAuth:", session);
+
 
   if (session?.user) {
     // ✅ Redirect server-side if logged in

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import api from "@/lib/axios";
+import {getApi} from "@/lib/axios";
 import { useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { useScopedI18n } from "../i18n";
 import { useLocale } from "../context/LocaleContext";
+import { useSession } from "next-auth/react";
 
 type FormValues = {
   project: string;
@@ -52,6 +53,8 @@ export default function TaskModal({
   setOpen: (open: boolean) => void;
 }) {
   const t = useScopedI18n("taskModal");
+  const session = useSession()
+  const api = getApi(session?.jwt)
 
   const queryClient = useQueryClient();
   const { locale } = useLocale();

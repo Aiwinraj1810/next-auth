@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import api from "@/lib/axios";
+import { getApi } from "@/lib/axios";
 import { useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { useScopedI18n } from "../i18n";
 import { useLocale } from "../context/LocaleContext";
+import { useSession } from "next-auth/react";
 
 type FormValues = {
   project: string;
@@ -39,7 +40,7 @@ type FormValues = {
 };
 
 export default function TaskModal({
-  weekId, 
+  weekId,
   defaultDate,
   entry,
   open,
@@ -56,13 +57,17 @@ export default function TaskModal({
   const queryClient = useQueryClient();
 
   const { locale } = useLocale();
+  const { data: session, status } = useSession();
+  console.log("status : ", session);
+  const api = getApi(session?.jwt);
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects",locale],
+    queryKey: ["projects", locale, session?.jwt],
     queryFn: async () => {
       const res = await api.get(`/projects?locale=${locale}`);
       return res.data.data || [];
     },
+    enabled: status === "authenticated" && !!session?.jwt,
   });
 
   const {
@@ -113,7 +118,10 @@ export default function TaskModal({
       };
 
       if (entry) {
-        const res = await api.put(`/timesheet-entries/${entry.documentId}`, payload);
+        const res = await api.put(
+          `/timesheet-entries/${entry.documentId}`,
+          payload
+        );
         return res.data;
       } else {
         const res = await api.post(`/timesheet-entries`, payload);
@@ -147,9 +155,7 @@ export default function TaskModal({
               {...register("task", { required: t("taskRequired") })}
             />
             {errors.task && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.task.message}
-              </p>
+              <p className="text-red-500 text-sm mt-1">{errors.task.message}</p>
             )}
           </div>
 

@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import api from "@/lib/axios";
+import {getApi} from "@/lib/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useScopedI18n } from "../i18n"; 
 
@@ -25,6 +25,7 @@ export default function DeleteConfirmationModal({
 }) {
   const t = useScopedI18n("deleteModal"); 
   const queryClient = useQueryClient();
+    const api = getApi()
 
   const mutation = useMutation({
     mutationFn: async () => {

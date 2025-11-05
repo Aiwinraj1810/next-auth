@@ -3,7 +3,7 @@
 import { getColumns } from "../../dashboard/columns";
 import { DataTable } from "../../dashboard/data-table";
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
+import { getApi } from "@/lib/axios";
 import AddEntryModal from "../../components/AddEntryModal";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -11,7 +11,7 @@ import { DateRange } from "react-day-picker";
 import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { useLocale } from "@/app/context/LocaleContext";
 import { useScopedI18n } from "@/app/i18n";
-
+import { useSession } from "next-auth/react";
 // Fetch timesheet summaries directly from Strapi
 
 async function fetchTimesheetSummaries({
@@ -23,10 +23,11 @@ async function fetchTimesheetSummaries({
     number,
     DateRange | undefined,
     string,
+    string | undefined,
     string | undefined
   ];
 }) {
-  const [, page, pageSize, dateRange, locale, status] = queryKey;
+  const [, page, pageSize, dateRange, locale, status,jwt] = queryKey;
 
   // ✅ Format date range to ISO strings (YYYY-MM-DD)
   const from = dateRange?.from
@@ -36,7 +37,7 @@ async function fetchTimesheetSummaries({
     ? formatISO(dateRange.to, { representation: "date" })
     : undefined;
 
-  // ✅ Build query params in Strapi-friendly (nested) structure
+
   const params: Record<string, any> = {
     page,
     pageSize,
@@ -46,15 +47,12 @@ async function fetchTimesheetSummaries({
     status,
   };
 
-  // ✅ Apply filters in nested form so Strapi parses them correctly
   if (from) params.filters.weekStart = { $gte: from };
   if (to) params.filters.weekEnd = { $lte: to };
   if (status) params.filters.summaryStatus = { $eq: status };
 
-  // 🟢 Optional: debug log for sanity check
-  console.log("🧾 Fetching timesheet summaries with params:", params);
 
-  // ✅ Fetch from Strapi (Axios automatically encodes nested filters)
+  const api = getApi(jwt);
   const res = await api.get("/timesheet-summaries/complete", { params });
   const { data, meta } = res.data;
 
@@ -73,6 +71,7 @@ async function fetchTimesheetSummaries({
 // ✅ Dashboard Component
 //
 export default function DashboardPage() {
+    const {data : session} = useSession()
   const { locale } = useLocale();
   const t = useScopedI18n("dashboard");
 
@@ -102,6 +101,7 @@ export default function DashboardPage() {
       dateRange,
       locale,
       statusFilter,
+      session?.jwt,
     ],
     queryFn: fetchTimesheetSummaries,
     placeholderData: (prev) => prev,
