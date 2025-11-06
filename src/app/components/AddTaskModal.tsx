@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import api from "@/lib/axios";
+import { getApi } from "@/lib/axios";
 import { useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
 
 type FormValues = {
   project: string;
@@ -59,6 +60,8 @@ export default function AddTaskModal({
       setValue("assignedDate", new Date(defaultDate));
     }
   }, [open, defaultDate, setValue]);
+  const { data: session } = useSession();
+  const api = getApi(session?.jwt);
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {

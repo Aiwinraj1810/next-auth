@@ -31,7 +31,7 @@ async function fetchWeekEntries(weekStart: string, jwt : string | undefined) {
       sort: ["date:asc"],
     },
   });
-  return res.data?.data || [];
+  return res.data || [];
 }
 
 export default function WeekInfoPage() {

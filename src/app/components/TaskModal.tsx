@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {getApi} from "@/lib/axios";
+import { getApi } from "@/lib/axios";
 import { useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -53,14 +53,14 @@ export default function TaskModal({
   setOpen: (open: boolean) => void;
 }) {
   const t = useScopedI18n("taskModal");
-  const session = useSession()
-  const api = getApi(session?.jwt)
+  const { data: session } = useSession();
+  const api = getApi(session?.jwt);
 
   const queryClient = useQueryClient();
   const { locale } = useLocale();
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects",locale],
+    queryKey: ["projects", locale],
     queryFn: async () => {
       const res = await api.get(`/projects?locale=${locale}`);
       return res.data.data || [];
